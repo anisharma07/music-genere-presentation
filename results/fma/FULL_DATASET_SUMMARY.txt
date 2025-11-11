@@ -1,0 +1,28 @@
+================================================================================
+MUSIC GENRE CLUSTERING - FULL DATASET ANALYSIS SUMMARY
+================================================================================
+Generated: 2025-11-07 22:13:29
+================================================================================
+
+Total audio files processed: 6,410
+Samples after cleaning: 2,091
+Features extracted: 155
+
+BEST RESULTS:
+--------------------------------------------------------------------------------
+Purity: 37.00% (K-Means, 60-40)
+Accuracy: 32.60% (Spectral Clustering, 80-20)
+NMI: 0.1414 (Spectral Clustering, 70-30)
+ARI: 0.1019 (GMM, 80-20)
+Silhouette: 0.0797 (MiniBatch K-Means, 80-20)
+
+
+AVERAGE ALGORITHM PERFORMANCE:
+--------------------------------------------------------------------------------
+                       Purity  Accuracy       NMI       ARI  Silhouette
+Algorithm                                                              
+Spectral Clustering  0.361025  0.318667  0.139348  0.088145    0.067480
+K-Means              0.343974  0.290717  0.128292  0.075786    0.073798
+GMM                  0.340804  0.292333  0.112459  0.081732    0.012593
+MiniBatch K-Means    0.339222  0.291363  0.124408  0.078221    0.073859
+DBSCAN               0.251234  0.251234  0.000000  0.000000         NaN
