@@ -160,3 +160,7 @@ htmlcov/
 # Keep presentation images
 !Presentation/images/*.png
 !results/**/*.png
+
+# Keep Music-Classifier models folder
+!Music-Classifier/models/
+!Music-Classifier/models/**
