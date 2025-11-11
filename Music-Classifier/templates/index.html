@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Genre Classifier</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .form-section {
+            margin-bottom: 25px;
+        }
+
+        .form-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 1.05em;
+        }
+
+        .form-section select,
+        .form-section input[type="file"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-section select:focus,
+        .form-section input[type="file"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .file-upload-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-upload-wrapper input[type="file"] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border: 3px dashed #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+
+        .file-upload-label:hover {
+            background: #e8eaf6;
+            border-color: #764ba2;
+        }
+
+        .file-upload-label.has-file {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+
+        .file-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .file-text {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            color: #4caf50;
+            font-weight: 600;
+        }
+
+        .btn-predict {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+
+        .btn-predict:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-predict:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-radius: 10px;
+            border-left: 5px solid #4caf50;
+        }
+
+        .result.active {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result h2 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .result-item {
+            margin: 10px 0;
+            font-size: 1.1em;
+        }
+
+        .result-item strong {
+            color: #1b5e20;
+        }
+
+        .genre-badge {
+            display: inline-block;
+            background: #4caf50;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .confidence-bar {
+            width: 100%;
+            height: 25px;
+            background: #e0e0e0;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+            transition: width 0.5s ease-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .top-predictions {
+            margin-top: 20px;
+        }
+
+        .top-predictions h3 {
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+
+        .prediction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+
+        .prediction-item .genre {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .prediction-item .conf {
+            color: #4caf50;
+            font-weight: 600;
+        }
+
+        .error {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #ffebee;
+            border-left: 5px solid #f44336;
+            border-radius: 5px;
+            color: #c62828;
+        }
+
+        .error.active {
+            display: block;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-left: 5px solid #2196f3;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box strong {
+            color: #1565c0;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .subtitle {
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🎵 Music Genre Classifier</h1>
+        <p class="subtitle">Upload an audio file to predict its genre using Machine Learning</p>
+
+        <div class="info-box">
+            <strong>ℹ️ Instructions:</strong>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li>Select clustering algorithm (KMeans or Spectral)</li>
+                <li>Choose train-test split ratio</li>
+                <li>Upload an audio file (WAV, MP3, FLAC, OGG, M4A)</li>
+                <li>First 30 seconds will be analyzed</li>
+            </ul>
+        </div>
+
+        <form id="predictionForm">
+            <div class="form-section">
+                <label for="algorithm">Select Algorithm:</label>
+                <select id="algorithm" name="algorithm" required>
+                    <option value="kmeans">KMeans Clustering</option>
+                    <option value="spectral">Spectral Clustering</option>
+                </select>
+            </div>
+
+            <div class="form-section">
+                <label for="split">Select Train-Test Split:</label>
+                <select id="split" name="split" required>
+                    <option value="80-20" selected>80-20 (Recommended)</option>
+                    <option value="70-30">70-30</option>
+                    <option value="60-40">60-40</option>
+                    <option value="50-50">50-50</option>
+                </select>
+            </div>
+
+            <div class="form-section">
+                <label>Upload Audio File:</label>
+                <div class="file-upload-wrapper">
+                    <input type="file" id="audioFile" name="audio_file" accept=".wav,.mp3,.flac,.ogg,.m4a" required>
+                    <label for="audioFile" class="file-upload-label" id="fileLabel">
+                        <div>
+                            <div class="file-icon">📁</div>
+                            <div class="file-text">Click to select audio file</div>
+                            <div class="file-name" id="fileName"></div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-predict" id="predictBtn">
+                🎯 Predict Genre
+            </button>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; color: #666;">Analyzing audio... Please wait</p>
+        </div>
+
+        <div class="error" id="error"></div>
+
+        <div class="result" id="result">
+            <h2>🎉 Prediction Result</h2>
+            <div class="result-item">
+                <strong>Predicted Genre:</strong>
+                <div class="genre-badge" id="predictedGenre"></div>
+            </div>
+            <div class="result-item">
+                <strong>Confidence:</strong>
+                <div class="confidence-bar">
+                    <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+                </div>
+            </div>
+            <div class="result-item">
+                <strong>Algorithm:</strong> <span id="algorithmUsed"></span>
+            </div>
+            <div class="result-item">
+                <strong>Train-Test Split:</strong> <span id="splitUsed"></span>
+            </div>
+            <div class="result-item">
+                <strong>Cluster ID:</strong> <span id="clusterId"></span>
+            </div>
+
+            <div class="top-predictions">
+                <h3>Top 3 Predictions:</h3>
+                <div id="topPredictions"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('predictionForm');
+        const fileInput = document.getElementById('audioFile');
+        const fileLabel = document.getElementById('fileLabel');
+        const fileName = document.getElementById('fileName');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const error = document.getElementById('error');
+        const predictBtn = document.getElementById('predictBtn');
+
+        // Handle file selection
+        fileInput.addEventListener('change', function (e) {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                fileName.textContent = `Selected: ${file.name}`;
+                fileLabel.classList.add('has-file');
+            } else {
+                fileName.textContent = '';
+                fileLabel.classList.remove('has-file');
+            }
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            // Hide previous results and errors
+            result.classList.remove('active');
+            error.classList.remove('active');
+
+            // Show loading
+            loading.classList.add('active');
+            predictBtn.disabled = true;
+
+            // Create form data
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                // Hide loading
+                loading.classList.remove('active');
+                predictBtn.disabled = false;
+
+                if (data.success) {
+                    // Display results
+                    document.getElementById('predictedGenre').textContent = data.predicted_genre.toUpperCase();
+                    document.getElementById('confidenceFill').style.width = data.confidence.toFixed(2) + '%';
+                    document.getElementById('confidenceFill').textContent = data.confidence.toFixed(2) + '%';
+                    document.getElementById('algorithmUsed').textContent = data.algorithm.toUpperCase();
+                    document.getElementById('splitUsed').textContent = data.split;
+                    document.getElementById('clusterId').textContent = data.cluster_id;
+
+                    // Display top predictions
+                    const topPredictionsDiv = document.getElementById('topPredictions');
+                    topPredictionsDiv.innerHTML = '';
+                    data.top_predictions.forEach((pred, index) => {
+                        const predItem = document.createElement('div');
+                        predItem.className = 'prediction-item';
+                        predItem.innerHTML = `
+                            <span class="genre">${index + 1}. ${pred.genre.toUpperCase()}</span>
+                            <span class="conf">${pred.confidence.toFixed(2)}%</span>
+                        `;
+                        topPredictionsDiv.appendChild(predItem);
+                    });
+
+                    result.classList.add('active');
+                } else {
+                    throw new Error(data.error || 'Prediction failed');
+                }
+            } catch (err) {
+                loading.classList.remove('active');
+                predictBtn.disabled = false;
+                error.textContent = '❌ Error: ' + err.message;
+                error.classList.add('active');
+            }
+        });
+    </script>
+</body>
+
+</html>
