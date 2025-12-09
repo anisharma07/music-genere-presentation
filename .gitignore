@@ -164,3 +164,8 @@ htmlcov/
 # Keep Music-Classifier models folder
 !Music-Classifier/models/
 !Music-Classifier/models/**
+
+/raw-data
+raw-data
+
+./raw-data

@@ -1,0 +1,81 @@
+================================================================================
+STEP 2: FEATURE SELECTION & NORMALIZATION - SUMMARY REPORT
+================================================================================
+
+1. FEATURE SELECTION
+--------------------------------------------------------------------------------
+Features removed: 6
+  • file_path, duration, sr, dataset, label, subset
+Audio features retained: 69
+  • Spectral: 4 features
+  • Tempo: 1 feature
+  • MFCC: 40 features
+  • Chroma: 24 features
+
+2. NORMALIZATION METHOD
+--------------------------------------------------------------------------------
+StandardScaler (sklearn)
+  • Formula: z = (x - μ) / σ
+  • Result: Zero mean, unit variance
+  • Purpose: Equal feature contribution to clustering
+
+3. DATASETS PROCESSED
+--------------------------------------------------------------------------------
+GTZAN:        999 tracks × 69 features
+FMA Small:    7,997 tracks × 70 features
+FMA Medium:   16,988 tracks × 70 features
+Instrumental: 502 tracks × 69 features
+Indian Music: 500 tracks × 69 features
+
+Total: 26,986 tracks processed
+
+4. OUTPUT FILES
+--------------------------------------------------------------------------------
+Location: ../results/normalization/
+
+Normalized datasets (CSV):
+  • gtzan_normalized.csv
+  • fma_small_normalized.csv
+  • fma_medium_normalized.csv
+  • instrumental_normalized.csv
+  • indian_normalized.csv
+
+Label files (CSV):
+  • gtzan_labels.csv
+  • fma_small_labels.csv
+  • fma_medium_labels.csv
+  • instrumental_labels.csv
+  • indian_labels.csv
+
+Visualization images (PNG):
+  • gtzan_normalization_comparison.png
+  • fma_small_normalization_comparison.png
+  • fma_medium_normalization_comparison.png
+  • instrumental_normalization_comparison.png
+  • indian_music_normalization_comparison.png
+
+Statistical summaries (CSV):
+  • gtzan_normalized_summary.csv
+  • fma_small_normalized_summary.csv
+  • fma_medium_normalized_summary.csv
+  • instrumental_normalized_summary.csv
+  • indian_normalized_summary.csv
+
+5. QUALITY VERIFICATION
+--------------------------------------------------------------------------------
+✓ No missing values
+✓ No infinite values
+✓ All features normalized (mean ≈ 0, std ≈ 1)
+✓ Feature count consistent across datasets
+✓ Labels preserved separately for evaluation
+
+6. NEXT STEPS
+--------------------------------------------------------------------------------
+→ Step 3: Outlier Detection & Removal
+→ Step 4: Dimensionality Reduction (PCA)
+→ Step 5: Clustering (K-Means, K-Medoids, GMM, Spectral)
+→ Step 6: Evaluation (Silhouette, Davies-Bouldin, etc.)
+
+================================================================================
+NORMALIZATION COMPLETED SUCCESSFULLY ✓
+================================================================================

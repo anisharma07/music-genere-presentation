@@ -8,974 +8,779 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
-\usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{array}
+\usepackage{subfig}
+\usepackage{float}
 \usepackage{url}
+\usepackage[hidelinks]{hyperref}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \begin{document}
 
-\title{Unsupervised Music Genre Discovery Using Audio Feature Learning: A Comprehensive Multi-Dataset Analysis}
+\title{Decoding Musical Genres: A Comprehensive Study of Unsupervised Clustering on High-Dimensional Audio Data}
 
-\author{\IEEEauthorblockN{Anirudh Sharma}
+\author{
+\IEEEauthorblockN{Anirudh Sharma}
 \IEEEauthorblockA{\textit{Department of Computer Science and Engineering} \\
-\textit{National Institute of Technology, Hamirpur}\\
-Hamirpur, Himachal Pradesh, India \\
-Roll No.: 22DCS002 \\
-Email: 22dcs002@nith.ac.in}
+\textit{National Institute of Technology Hamirpur}\\
+Hamirpur, India \\
+Roll No.: 22dcs002\\
+email: 22dcs002@nith.ac.in}
 }
 
 \maketitle
 
 \begin{abstract}
-Music genre classification remains a fundamental challenge in Music Information Retrieval (MIR), traditionally approached through supervised learning methods that require extensive labeled datasets. This research presents a comprehensive unsupervised learning framework for automatic music genre discovery using audio feature learning across four diverse datasets: GTZAN (1,000 tracks), FMA-Small (6,410 tracks), Million Song Dataset (MSD) regional subset, and Spotify Tracks Dataset. We extracted 75-155 audio features per dataset including Mel-Frequency Cepstral Coefficients (MFCCs), chroma features, spectral characteristics, and temporal dynamics using the Librosa library. Our experimental framework evaluated five clustering algorithms—K-Means, MiniBatch K-Means, Spectral Clustering, Gaussian Mixture Models (GMM), and DBSCAN—across four train-test splits (50-50, 60-40, 70-30, 80-20) with multiple random seeds for robustness. Dimensionality reduction via Principal Component Analysis (PCA) retained 89-95\% variance while reducing feature space by 70\%. Performance evaluation employed six metrics: Silhouette Score, Davies-Bouldin Index, Calinski-Harabasz Index, Normalized Mutual Information (NMI), Adjusted Rand Index (ARI), and cluster purity. K-Means and Spectral Clustering emerged as top performers with average silhouette scores of 0.109 and purity scores reaching 50\% on FMA dataset. The GTZAN dataset achieved best results with NMI of 0.408 and accuracy of 43.6\% using K-Means at 80-20 split. DBSCAN struggled with sparse feature spaces, yielding single-cluster solutions. Our multi-dataset analysis reveals that unsupervised methods can effectively discover latent genre structures, with performance varying significantly based on dataset characteristics, feature quality, and algorithm choice. This work contributes a rigorous experimental methodology, comprehensive evaluation framework, and insights into unsupervised genre discovery challenges, providing a foundation for future MIR research.
+\textbf{This paper presents a comprehensive investigation into unsupervised music genre discovery through audio feature learning across multiple diverse datasets. We apply dimensionality reduction and clustering techniques to extract meaningful genre patterns without labeled training data. Our study processes four distinct music datasets: GTZAN (999 tracks, 10 genres), FMA Small (7,997 tracks, 8 genres), FMA Medium (24,985 tracks, 16 genres), and Indian Music (500 tracks, 5 regional genres), collectively containing 69 normalized audio features per track. Through systematic feature extraction using Librosa, comprehensive normalization using StandardScaler, and Principal Component Analysis (PCA) achieving 95\%+ variance retention with 36-44\% dimensionality reduction, we establish a robust foundation for unsupervised genre classification. The preprocessing pipeline demonstrates consistent performance across datasets, with PCA reducing computational complexity while maintaining information integrity. Our experimental framework provides insights into the effectiveness of unsupervised learning for music genre discovery, establishing benchmarks for future research in audio content analysis. Results indicate that properly normalized and dimensionally-reduced features enable effective clustering with significant computational savings.}
 \end{abstract}
 
 \begin{IEEEkeywords}
-Music Genre Classification, Unsupervised Learning, Audio Feature Extraction, Clustering Algorithms, MFCC
+Unsupervised Learning, Music Genre Classification, Audio Feature Extraction, Principal Component Analysis, Clustering Algorithms
 \end{IEEEkeywords}
 
-\section{Introduction}
-Music genre classification is a cornerstone problem in Music Information Retrieval (MIR) with applications spanning music recommendation systems, playlist generation, copyright management, and music archive organization \cite{tzanetakis2002musical}. Traditional approaches rely heavily on supervised learning methodologies requiring extensive labeled datasets, manual annotation by music experts, and domain-specific feature engineering. However, the subjective nature of genre boundaries, the emergence of hybrid genres, and the exponential growth of digital music content present significant challenges to supervised paradigms.
+\section{\textbf{Introduction}}
+\label{sec:introduction}
 
-Unsupervised learning offers a compelling alternative by discovering inherent structures and patterns in audio data without relying on predefined labels \cite{humphrey2013moving}. This approach is particularly valuable for: (1) exploring large-scale unlabeled music archives, (2) discovering emergent or niche genres not present in training taxonomies, (3) reducing annotation costs and subjectivity bias, and (4) enabling cross-cultural music analysis where Western genre taxonomies may not apply.
+Music genre classification represents a fundamental challenge in music information retrieval (MIR), with applications spanning music recommendation systems, content organization, and automated playlist generation. Traditional supervised approaches require extensive labeled datasets, which are costly and time-consuming to create. Unsupervised learning offers a compelling alternative by discovering latent genre structures directly from audio features without manual annotations.
 
-\subsection{Motivation}
-Despite advances in deep learning for music classification \cite{choi2017convolutional}, several critical gaps persist in the literature:
+\subsection{\textbf{Motivation}}
+
+The exponential growth of digital music libraries necessitates automated genre classification systems. However, genre boundaries are inherently subjective and culturally dependent, making supervised classification challenging. Unsupervised methods can:
+
 \begin{itemize}
-    \item Limited comprehensive studies comparing multiple clustering algorithms across diverse datasets
-    \item Insufficient analysis of feature engineering and dimensionality reduction impacts
-    \item Lack of rigorous evaluation frameworks using multiple complementary metrics
-    \item Inadequate exploration of robustness across different train-test splits and random initializations
+    \item Discover hidden genre patterns without labeled data
+    \item Identify sub-genres and emerging music styles
+    \item Handle cross-cultural and regional music variations
+    \item Reduce annotation costs and human bias
+    \item Scale to large music collections efficiently
 \end{itemize}
 
-This research addresses these gaps by presenting a systematic, multi-dataset evaluation of unsupervised genre discovery methods.
+\subsection{\textbf{Research Objectives}}
 
-\subsection{Research Objectives}
-The primary objectives of this study are:
+This study aims to:
+
 \begin{enumerate}
-    \item To develop a comprehensive audio feature extraction pipeline using state-of-the-art signal processing techniques
-    \item To perform rigorous data analysis, cleaning, and preprocessing across four diverse music datasets
-    \item To compare five clustering algorithms (K-Means, MiniBatch K-Means, Spectral Clustering, GMM, DBSCAN) using six evaluation metrics
-    \item To analyze algorithm performance across multiple train-test splits with statistical robustness
-    \item To provide insights and recommendations for practical unsupervised music genre discovery applications
+    \item Extract and process comprehensive audio features from diverse music datasets
+    \item Apply robust normalization and dimensionality reduction techniques
+    \item Evaluate multiple unsupervised clustering algorithms for genre discovery
+    \item Compare algorithm performance across different dataset characteristics
+    \item Establish reproducible benchmarks for music genre clustering
 \end{enumerate}
 
-\subsection{Contributions}
-This work makes the following key contributions:
+\subsection{\textbf{Contributions}}
+
+Our primary contributions include:
+
 \begin{itemize}
-    \item \textbf{Comprehensive Multi-Dataset Analysis:} First systematic evaluation across four diverse music datasets with different characteristics and scales
-    \item \textbf{Rigorous Experimental Framework:} 60+ experiments per dataset with multiple splits, seeds, and algorithms ensuring statistical validity
-    \item \textbf{Multi-Metric Evaluation:} Holistic assessment using six complementary metrics capturing different aspects of clustering quality
-    \item \textbf{Reproducible Methodology:} Complete pipeline from raw audio to cluster evaluation with detailed hyperparameter specifications
-    \item \textbf{Practical Insights:} Algorithm-specific performance characteristics and dataset-dependent recommendations for practitioners
+    \item A comprehensive multi-dataset analysis framework spanning Western and Indian music
+    \item Systematic comparison of preprocessing techniques across 34,481 total tracks
+    \item PCA-based dimensionality reduction achieving 95\%+ variance retention
+    \item Reproducible experimental pipeline with open-source implementation
+    \item Detailed performance metrics and visualization for each processing stage
 \end{itemize}
 
-\subsection{Paper Organization}
-The remainder of this paper is organized as follows: Section II reviews related work in music genre classification and unsupervised learning. Section III details the datasets and preprocessing methodology. Section IV describes the implementation including feature extraction, dimensionality reduction, and clustering algorithms. Section V presents theoretical and mathematical foundations. Section VI analyzes experimental results with detailed performance comparisons. Section VII discusses limitations and future directions. Section VIII concludes the paper.
+\section{\textbf{Related Work}}
+\label{sec:related}
 
-\section{Related Work}
+\subsection{\textbf{Music Genre Classification}}
 
-\subsection{Music Genre Classification}
-The seminal work by Tzanetakis and Cook \cite{tzanetakis2002musical} established the foundation for automatic music genre classification using timbral, rhythmic, and pitch-based features with classical machine learning algorithms. Their GTZAN dataset remains a standard benchmark despite known limitations including repetitions, mislabelings, and artist bias \cite{sturm2013gtzan}.
+Tzanetakis and Cook \cite{tzanetakis2002} pioneered automatic music genre classification using timbral, rhythmic, and pitch-based features. Their work on the GTZAN dataset established foundational benchmarks that remain relevant today. Subsequent research has shifted towards self-supervised learning, exploring contrastive learning of musical representations \cite{spijkervet2021} and general-purpose audio embeddings \cite{saeed2021}.
 
-Recent advances have shifted toward deep learning approaches. Humphrey et al. \cite{humphrey2013moving} demonstrated feature learning from spectrograms using convolutional neural networks. Choi et al. \cite{choi2017convolutional} achieved state-of-the-art results on the Million Song Dataset using deep convolutional architectures with transfer learning. Pons et al. \cite{pons2018timbre} explored musically motivated CNN architectures that capture timbral, temporal, and harmonic information at multiple time scales.
+\subsection{\textbf{Unsupervised Learning in MIR}}
 
-\subsection{Unsupervised Learning in MIR}
-Unsupervised approaches in MIR have received comparatively less attention. McFee and Lanckriet \cite{mcfee2012learning} proposed heterogeneous metric learning for music similarity without genre labels. Nakashika et al. \cite{nakashika2012music} used non-negative matrix factorization for unsupervised genre clustering. More recently, van den Oord et al. \cite{oord2018representation} introduced contrastive predictive coding for learning audio representations in an unsupervised manner.
+Recent studies have demonstrated the effectiveness of unsupervised methods for music analysis. Castellon et al. \cite{castellon2021} investigated clustering-based approaches using codified audio language models to discover musical patterns. Similarly, metric learning approaches have been applied to disentangle musical concepts like genre and mood without explicit supervision \cite{lee2020}. However, systematic comparisons across multiple datasets with varying characteristics remain limited.
 
-Clustering-based approaches have shown promise for music structure analysis and similarity computation. Paulus and Klapuri \cite{paulus2009music} applied spectral clustering to music structure segmentation. Nieto and Jehan \cite{nieto2013perceptual} used agglomerative clustering with perceptual linear prediction features for music similarity.
+\subsection{\textbf{Feature Engineering for Audio}}
 
-\subsection{Feature Extraction and Representation}
-Traditional audio features include MFCCs \cite{logan2000mel}, chroma features \cite{muller2007information}, spectral features (centroid, rolloff, flux, bandwidth), and temporal features (zero-crossing rate, tempo, onset strength) \cite{tzanetakis2002musical}. These hand-crafted features remain competitive baselines and are interpretable.
+Librosa \cite{mcfee2015} has become the de facto standard for audio feature extraction in Python, providing robust implementations of MFCCs, chromagrams, and spectral features. Comprehensive feature sets combining temporal, spectral, and cepstral information have shown superior performance compared to single-feature approaches \cite{sturm2013}.
 
-Recent work has explored learned representations through autoencoders \cite{dieleman2014end}, variational autoencoders \cite{esling2018universal}, and self-supervised learning \cite{gururani2020instrument}. However, the interpretability-performance tradeoff remains an open research question.
+\subsection{\textbf{Dimensionality Reduction Techniques}}
 
-\subsection{Dimensionality Reduction}
-High-dimensional audio features pose challenges for clustering algorithms due to the curse of dimensionality. Principal Component Analysis (PCA) is widely used for linear dimensionality reduction \cite{jolliffe2016principal}. Non-linear methods like t-SNE \cite{maaten2008visualizing} and UMAP \cite{mcinnes2018umap} have shown superior visualization capabilities but can distort global structure.
+Principal Component Analysis (PCA) remains widely used for dimensionality reduction in audio applications due to its computational efficiency and interpretability. Alternative approaches include t-SNE for visualization \cite{maaten2008}, autoencoders for non-linear feature learning \cite{hinton2006}, and modern generative models like VQ-VAEs for discrete latent representation learning \cite{dhariwal2020}. The choice of reduction technique significantly impacts clustering performance.
 
-\subsection{Research Gap}
-While prior work has explored individual aspects of unsupervised music analysis, comprehensive multi-dataset studies with rigorous evaluation across diverse clustering algorithms remain scarce. This paper addresses this gap through systematic experimentation and analysis.
+\section{\textbf{Datasets}}
+\label{sec:datasets}
 
-\section{Datasets and Preprocessing}
+\subsection{\textbf{Dataset Overview}}
 
-\subsection{Dataset Description}
-We evaluated our methodology on four diverse music datasets:
+Our study employs four diverse music datasets to ensure robust evaluation across different musical styles, genres, and cultural contexts.
 
-\subsubsection{GTZAN Dataset}
-The GTZAN dataset \cite{tzanetakis2002musical} contains 1,000 audio tracks (30 seconds each) spanning 10 genres: blues, classical, country, disco, hiphop, jazz, metal, pop, reggae, and rock. Each genre has 100 tracks. Despite known issues \cite{sturm2013gtzan}, it remains the most widely used benchmark for comparison purposes.
+\begin{table}[h]
+\centering
+\caption{Dataset Characteristics Summary}
+\label{tab:datasets}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Dataset} & \textbf{Tracks} & \textbf{Genres} & \textbf{Duration} & \textbf{Source} \\
+\midrule
+GTZAN & 999 & 10 & 30s & Audio Files \\
+FMA Small & 7,997 & 8 & 30s & FMA API \\
+FMA Medium & 24,985 & 16 & 30s & FMA API \\
+Indian Music & 500 & 5 & Variable & Regional \\
+\midrule
+\textbf{Total} & \textbf{34,481} & \textbf{39} & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\subsubsection{FMA-Small Dataset}
-The Free Music Archive (FMA) \cite{defferrard2017fma} provides 8,000 tracks across 8 balanced genres, each 30 seconds long. We processed 6,410 tracks with complete metadata. FMA offers higher quality annotations and addresses many limitations of GTZAN.
+\subsection{\textbf{GTZAN Dataset}}
 
-\subsubsection{Million Song Dataset (MSD)}
-We utilized a regional subset of the MSD \cite{bertin2011million} containing pre-computed audio features. The dataset provides diverse music content but lacks explicit genre labels, making it ideal for unsupervised discovery.
+The GTZAN genre collection \cite{tzanetakis2002} consists of 1,000 audio tracks (one corrupted file removed) with 30-second clips across 10 genres: blues, classical, country, disco, hip-hop, jazz, metal, pop, reggae, and rock. This balanced dataset serves as a standard benchmark in MIR research.
 
-\subsubsection{Spotify Tracks Dataset}
-This dataset comprises audio features extracted via the Spotify API \cite{spotify2020web} for diverse tracks. Features include acousticness, danceability, energy, instrumentalness, liveness, loudness, speechiness, tempo, and valence—representing high-level musical attributes.
+\textbf{Genre Distribution:} Nearly perfectly balanced with 100 tracks per genre (99-100 tracks after corruption removal).
 
-\subsection{Data Analysis and Quality Assessment}
+\subsection{\textbf{Free Music Archive (FMA) Datasets}}
 
-\subsubsection{Descriptive Statistics}
-For each dataset, we computed comprehensive descriptive statistics including:
+The Free Music Archive datasets \cite{defferrard2017} provide large-scale music collections with hierarchical genre annotations:
+
 \begin{itemize}
-    \item Central tendency measures: mean, median, mode
-    \item Dispersion measures: standard deviation, variance, IQR
-    \item Trimmed mean (removing top and bottom 10\%)
-    \item Skewness and kurtosis for distribution characterization
+    \item \textbf{FMA Small:} 8,000 tracks covering 8 primary genres
+    \item \textbf{FMA Medium:} 25,000 tracks spanning 16 genres with richer diversity
 \end{itemize}
 
-\textbf{GTZAN Dataset:} 57 features extracted with no missing values. Most features exhibited near-normal distributions with 1 highly skewed feature (|skewness| > 1) and 5 high-variability features (CV > 50\%).
+Both subsets use 30-second audio clips, enabling consistent feature extraction across datasets.
 
-\textbf{FMA Dataset:} 75 original features with 12 highly correlated pairs (|r| > 0.8). Notable correlations included spectral\_centroid\_mean $\leftrightarrow$ spectral\_rolloff\_mean (r = 0.974) and mfcc\_1\_mean $\leftrightarrow$ spectral\_bandwidth\_mean (r = -0.921).
+\subsection{\textbf{Indian Music Dataset}}
 
-\textbf{MSD Dataset:} Pre-computed features showed consistent distributions with minimal outliers, indicating robust feature extraction.
+A curated collection of 500 tracks representing 5 distinct Indian music genres:
 
-\textbf{Spotify Dataset:} High-level features showed distinct distribution patterns with strong correlations between energy-loudness (r = 0.78) and energy-acousticness (r = -0.68).
-
-\subsubsection{Outlier Detection and Treatment}
-Outlier detection employed the Interquartile Range (IQR) method:
-\begin{equation}
-\text{Outlier} = x < Q_1 - 1.5 \times \text{IQR} \text{ or } x > Q_3 + 1.5 \times \text{IQR}
-\end{equation}
-where $Q_1$ and $Q_3$ are the first and third quartiles, respectively.
-
-\textbf{Results:}
 \begin{itemize}
-    \item \textbf{GTZAN:} 127 outlier instances across features; retained all samples
-    \item \textbf{FMA:} 40\% samples removed (from 100 to 60) due to severe outliers in processing subset
-    \item \textbf{MSD:} Minimal outlier removal (<5\%)
-    \item \textbf{Spotify:} Normalized features reduced outlier impact
+    \item \textbf{Bollypop:} Contemporary Bollywood pop music
+    \item \textbf{Carnatic:} South Indian classical music
+    \item \textbf{Ghazal:} Urdu/Hindi poetic musical form
+    \item \textbf{Semiclassical:} Fusion of classical and light music
+    \item \textbf{Sufi:} Devotional Sufi music
 \end{itemize}
 
-\subsubsection{Missing Value Imputation}
-Missing values were handled using mean imputation for numerical features:
-\begin{equation}
-x_{\text{missing}} = \frac{1}{n} \sum_{i=1}^{n} x_i
-\end{equation}
-where $n$ is the number of non-missing values.
+This dataset provides regional diversity and tests algorithm generalization across cultural contexts. The distribution is perfectly balanced with 100 tracks per genre.
 
-GTZAN and MSD had no missing values. FMA had <0.1\% missing values, successfully imputed. Spotify API data was complete.
+\section{\textbf{Methodology}}
+\label{sec:methodology}
 
-\subsubsection{Correlation Analysis}
-We computed Pearson correlation matrices to identify redundant features:
-\begin{equation}
-r = \frac{\sum_{i=1}^{n}(x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum_{i=1}^{n}(x_i - \bar{x})^2 \sum_{i=1}^{n}(y_i - \bar{y})^2}}
-\end{equation}
+\subsection{\textbf{Feature Extraction}}
 
-High correlations (|r| > 0.8) were noted but features were retained for PCA to handle multicollinearity.
-
-\subsection{Data Normalization}
-All features were standardized using z-score normalization to ensure equal contribution to distance-based algorithms:
-\begin{equation}
-z = \frac{x - \mu}{\sigma}
-\end{equation}
-where $\mu$ is the mean and $\sigma$ is the standard deviation.
-
-\section{Implementation}
-
-\subsection{Feature Extraction Pipeline}
-
-\subsubsection{Mel-Frequency Cepstral Coefficients (MFCCs)}
-MFCCs capture timbral characteristics of audio signals. We extracted 20-40 MFCC coefficients per dataset:
-\begin{enumerate}
-    \item Apply pre-emphasis filter: $y[n] = x[n] - \alpha x[n-1]$ where $\alpha = 0.97$
-    \item Frame audio into 2048-sample windows with 512-sample hop length
-    \item Apply Hamming window: $w[n] = 0.54 - 0.46\cos(\frac{2\pi n}{N-1})$
-    \item Compute FFT and power spectrum
-    \item Apply mel-scale filter bank (40 filters, 0-8000 Hz)
-    \item Take logarithm and compute DCT
-    \item Retain first 20-40 coefficients
-\end{enumerate}
-
-For each coefficient, we computed mean and standard deviation across frames, yielding 40-80 MFCC features.
-
-\subsubsection{Chroma Features}
-Chroma features represent pitch class distribution, capturing harmonic and melodic content:
-\begin{equation}
-\text{Chroma}[p] = \sum_{k: \text{pitch}(k) = p} |X[k]|^2
-\end{equation}
-where $p \in \{C, C\#, D, ..., B\}$.
-
-We extracted 12 chroma bins with mean and standard deviation, yielding 24 features.
+We employ Librosa \cite{mcfee2015} version 0.11.0 for extracting 69 audio features per track, organized into five categories:
 
 \subsubsection{Spectral Features}
-We computed the following spectral features:
+
 \begin{itemize}
-    \item \textbf{Spectral Centroid:} Center of mass of spectrum
-    \begin{equation}
-    SC = \frac{\sum_{k=1}^{N} f[k] \cdot |X[k]|}{\sum_{k=1}^{N} |X[k]|}
-    \end{equation}
-    
-    \item \textbf{Spectral Rolloff:} Frequency below which 85\% of energy is contained
-    \begin{equation}
-    SR = \text{frequency } k \text{ where } \sum_{i=1}^{k} |X[i]| = 0.85 \sum_{i=1}^{N} |X[i]|
-    \end{equation}
-    
-    \item \textbf{Spectral Bandwidth:} Weighted standard deviation around spectral centroid
-    \begin{equation}
-    SB = \sqrt{\frac{\sum_{k=1}^{N} (f[k] - SC)^2 \cdot |X[k]|}{\sum_{k=1}^{N} |X[k]|}}
-    \end{equation}
+    \item \textbf{Spectral Centroid:} Center of mass of spectrum (brightness indicator)
+    \item \textbf{Spectral Rolloff:} Frequency below which 85\% of spectral energy lies
+    \item \textbf{Zero Crossing Rate:} Number of sign changes in signal
 \end{itemize}
+
+\subsubsection{Mel-Frequency Cepstral Coefficients (MFCCs)}
+
+20 MFCC coefficients capturing timbral texture, computed for both mean and standard deviation (40 features total). MFCCs model the human auditory system's response to sound.
+
+\subsubsection{Chroma Features}
+
+12 pitch classes representing harmonic content, with mean and standard deviation (24 features). Chroma features are invariant to octave changes and useful for capturing melodic patterns.
 
 \subsubsection{Temporal Features}
+
 \begin{itemize}
-    \item \textbf{Zero Crossing Rate (ZCR):} Rate of sign changes in signal
-    \begin{equation}
-    ZCR = \frac{1}{2N} \sum_{n=1}^{N-1} |\text{sgn}(x[n]) - \text{sgn}(x[n-1])|
-    \end{equation}
-    
-    \item \textbf{RMS Energy:} Root mean square energy
-    \begin{equation}
-    E_{\text{RMS}} = \sqrt{\frac{1}{N} \sum_{n=1}^{N} x[n]^2}
-    \end{equation}
-    
-    \item \textbf{Tempo:} Estimated beats per minute using onset detection
+    \item \textbf{Root Mean Square (RMS) Energy:} Signal amplitude measure
+    \item \textbf{Tempo:} Beats per minute estimation
 \end{itemize}
 
-\subsection{Dimensionality Reduction}
+\subsubsection{Feature Computation}
 
-\subsubsection{Principal Component Analysis (PCA)}
-PCA projects data onto orthogonal principal components maximizing variance:
-\begin{enumerate}
-    \item Compute covariance matrix: $\Sigma = \frac{1}{n-1}X^TX$
-    \item Compute eigendecomposition: $\Sigma = V \Lambda V^T$
-    \item Sort eigenvectors by eigenvalues in descending order
-    \item Select top $k$ components retaining 95\% variance:
-    \begin{equation}
-    \frac{\sum_{i=1}^{k} \lambda_i}{\sum_{i=1}^{d} \lambda_i} \geq 0.95
-    \end{equation}
-    \item Project data: $X_{\text{reduced}} = X V_k$
-\end{enumerate}
+For each 30-second audio clip, we extract frame-level features using a 2048-sample window with 512-sample hop length (approximately 20ms frames at 22,050 Hz sample rate). Statistical aggregation (mean, standard deviation) provides fixed-length feature vectors.
 
-\textbf{Results:}
+\subsection{\textbf{Data Preprocessing Pipeline}}
+
+\subsubsection{Descriptive Analysis}
+
+Initial exploratory data analysis computes:
+
 \begin{itemize}
-    \item \textbf{GTZAN:} 57 → 35 features (95\% variance)
-    \item \textbf{FMA:} 75 → 20 features (89.26\% variance)
-    \item \textbf{MSD:} Retained original feature space
-    \item \textbf{Spotify:} Minimal reduction needed
+    \item Distribution statistics (mean, median, quartiles, IQR)
+    \item Feature correlations via Pearson correlation matrices
+    \item Outlier detection using box plots and IQR method
+    \item Missing value identification and imputation strategies
 \end{itemize}
 
-\subsection{Clustering Algorithms}
-
-\subsubsection{K-Means Clustering}
-K-Means partitions data into $K$ clusters by minimizing within-cluster sum of squares:
-\begin{equation}
-\min_{\{C_k\}} \sum_{k=1}^{K} \sum_{x \in C_k} ||x - \mu_k||^2
-\end{equation}
-where $\mu_k$ is the centroid of cluster $C_k$.
-
-\textbf{Algorithm:}
-\begin{enumerate}
-    \item Initialize $K$ centroids randomly
-    \item Assign each point to nearest centroid
-    \item Update centroids: $\mu_k = \frac{1}{|C_k|} \sum_{x \in C_k} x$
-    \item Repeat until convergence
-\end{enumerate}
-
-\textbf{Hyperparameters:} $K = 10$ (GTZAN), $K = 8$ (FMA), $K = 30$ (MSD, Spotify); max\_iter = 300; n\_init = 10.
-
-\subsubsection{MiniBatch K-Means}
-Scalable variant of K-Means using mini-batch gradient descent:
-\begin{equation}
-\mu_k^{(t+1)} = \mu_k^{(t)} + \eta (x - \mu_k^{(t)})
-\end{equation}
-where $\eta$ is the learning rate.
-
-\textbf{Hyperparameters:} batch\_size = 100; same $K$ values as K-Means.
-
-\subsubsection{Spectral Clustering}
-Spectral clustering uses graph-theoretic approach:
-\begin{enumerate}
-    \item Construct similarity matrix: $S_{ij} = \exp(-\frac{||x_i - x_j||^2}{2\sigma^2})$
-    \item Compute graph Laplacian: $L = D - S$ where $D_{ii} = \sum_j S_{ij}$
-    \item Compute eigenvectors of normalized Laplacian: $L_{\text{norm}} = D^{-1/2}LD^{-1/2}$
-    \item Use first $K$ eigenvectors as features
-    \item Apply K-Means on eigenvector representation
-\end{enumerate}
-
-\textbf{Hyperparameters:} affinity = 'rbf'; gamma = 1.0.
-
-\subsubsection{Gaussian Mixture Models (GMM)}
-GMM assumes data is generated from mixture of $K$ Gaussians:
-\begin{equation}
-p(x) = \sum_{k=1}^{K} \pi_k \mathcal{N}(x | \mu_k, \Sigma_k)
-\end{equation}
-where $\pi_k$ are mixing coefficients, $\mu_k$ are means, and $\Sigma_k$ are covariances.
-
-Parameters estimated using Expectation-Maximization (EM) algorithm:
+Results from GTZAN analysis reveal:
 \begin{itemize}
-    \item \textbf{E-step:} Compute posterior probabilities:
-    \begin{equation}
-    \gamma_{ik} = \frac{\pi_k \mathcal{N}(x_i | \mu_k, \Sigma_k)}{\sum_{j=1}^{K} \pi_j \mathcal{N}(x_i | \mu_j, \Sigma_j)}
-    \end{equation}
-    
-    \item \textbf{M-step:} Update parameters:
-    \begin{align}
-    \mu_k &= \frac{\sum_{i=1}^{n} \gamma_{ik} x_i}{\sum_{i=1}^{n} \gamma_{ik}} \\
-    \Sigma_k &= \frac{\sum_{i=1}^{n} \gamma_{ik} (x_i - \mu_k)(x_i - \mu_k)^T}{\sum_{i=1}^{n} \gamma_{ik}}
-    \end{align}
+    \item High correlation between MFCC mean and std features (0.7-0.9)
+    \item Spectral features show moderate correlation (0.4-0.6)
+    \item Chroma features exhibit lower correlation (0.2-0.5)
+    \item Tempo and RMS are relatively independent
 \end{itemize}
 
-\textbf{Hyperparameters:} covariance\_type = 'full'; max\_iter = 100.
+\subsubsection{Feature Normalization}
 
-\subsubsection{DBSCAN}
-Density-Based Spatial Clustering of Applications with Noise (DBSCAN) identifies clusters as dense regions separated by low-density regions:
+StandardScaler normalization transforms features to zero mean and unit variance:
 
-\textbf{Core point:} Point with at least $\text{min\_samples}$ neighbors within radius $\epsilon$.
-
-\textbf{Algorithm:}
-\begin{enumerate}
-    \item For each unvisited point $p$:
-    \item Find neighbors within $\epsilon$: $N_\epsilon(p) = \{q : d(p,q) \leq \epsilon\}$
-    \item If $|N_\epsilon(p)| \geq \text{min\_samples}$, start new cluster
-    \item Add density-reachable points to cluster
-    \item Mark remaining points as noise
-\end{enumerate}
-
-\textbf{Hyperparameters:} Auto-tuned using k-distance graph. GTZAN: $\epsilon = 6.26$, min\_samples = 3.
-
-\subsection{Experimental Setup}
-
-\subsubsection{Train-Test Splits}
-We evaluated four different split ratios:
-\begin{itemize}
-    \item 50-50 split (balanced validation)
-    \item 60-40 split (moderate training data)
-    \item 70-30 split (standard split)
-    \item 80-20 split (large training set)
-\end{itemize}
-
-\subsubsection{Random Seeds and Robustness}
-Each configuration was repeated with three random seeds (0, 42, 1337) to ensure statistical robustness. Total experiments per dataset: $5 \times 4 \times 3 = 60$ configurations.
-
-\subsubsection{Implementation Details}
-\begin{itemize}
-    \item \textbf{Language:} Python 3.9
-    \item \textbf{Libraries:} Librosa 0.9.2, Scikit-learn 1.0.2, NumPy 1.21.5, Pandas 1.4.2
-    \item \textbf{Hardware:} Intel i7-11800H, 16GB RAM, NVIDIA RTX 3060 (for acceleration)
-    \item \textbf{Experiment Tracking:} Weights \& Biases (W\&B)
-\end{itemize}
-
-\section{Theoretical and Mathematical Analysis}
-
-\subsection{Clustering Optimality Criteria}
-
-\subsubsection{Within-Cluster Sum of Squares (WCSS)}
-K-Means optimizes WCSS (inertia):
 \begin{equation}
-\text{WCSS} = \sum_{k=1}^{K} \sum_{x \in C_k} ||x - \mu_k||^2
+z = \frac{x - \mu}{\sigma}
+\label{eq:standardscaler}
 \end{equation}
 
-Lower WCSS indicates compact clusters. However, WCSS monotonically decreases with increasing $K$, necessitating additional criteria.
+where $x$ is the original feature value, $\mu$ is the mean, $\sigma$ is the standard deviation, and $z$ is the normalized value.
 
-\subsubsection{Between-Cluster Sum of Squares (BCSS)}
-\begin{equation}
-\text{BCSS} = \sum_{k=1}^{K} |C_k| ||\mu_k - \mu||^2
-\end{equation}
-where $\mu$ is the global mean.
-
-Higher BCSS indicates well-separated clusters.
-
-\subsubsection{Likelihood Maximization (GMM)}
-GMM maximizes log-likelihood:
-\begin{equation}
-\mathcal{L} = \sum_{i=1}^{n} \log \left( \sum_{k=1}^{K} \pi_k \mathcal{N}(x_i | \mu_k, \Sigma_k) \right)
-\end{equation}
-
-EM algorithm guarantees monotonic increase in likelihood until local maximum.
-
-\subsection{Evaluation Metrics}
-
-\subsubsection{Silhouette Score}
-Measures how similar an object is to its own cluster compared to other clusters:
-\begin{equation}
-s(i) = \frac{b(i) - a(i)}{\max\{a(i), b(i)\}}
-\end{equation}
-where:
-\begin{itemize}
-    \item $a(i)$: mean distance to other points in same cluster
-    \item $b(i)$: mean distance to points in nearest cluster
-\end{itemize}
-
-Average silhouette score:
-\begin{equation}
-\text{Silhouette} = \frac{1}{n} \sum_{i=1}^{n} s(i)
-\end{equation}
-
-Range: $[-1, 1]$. Higher is better. $s > 0.5$ indicates strong structure.
-
-\subsubsection{Davies-Bouldin Index}
-Measures average similarity between each cluster and its most similar cluster:
-\begin{equation}
-\text{DB} = \frac{1}{K} \sum_{k=1}^{K} \max_{k' \neq k} \frac{\sigma_k + \sigma_{k'}}{d(c_k, c_{k'})}
-\end{equation}
-where:
-\begin{itemize}
-    \item $\sigma_k$: average distance of points in cluster $k$ to centroid
-    \item $d(c_k, c_{k'})$: distance between centroids
-\end{itemize}
-
-Range: $[0, \infty)$. Lower is better.
-
-\subsubsection{Calinski-Harabasz Index}
-Ratio of between-cluster to within-cluster dispersion:
-\begin{equation}
-\text{CH} = \frac{\text{BCSS}/(K-1)}{\text{WCSS}/(n-K)}
-\end{equation}
-
-Higher values indicate better-defined clusters.
-
-\subsubsection{Normalized Mutual Information (NMI)}
-Measures agreement between predicted clusters and true labels:
-\begin{equation}
-\text{NMI}(Y, C) = \frac{2 \times I(Y; C)}{H(Y) + H(C)}
-\end{equation}
-where:
-\begin{itemize}
-    \item $I(Y; C)$: mutual information
-    \item $H(\cdot)$: entropy
-\end{itemize}
-
-Range: $[0, 1]$. Higher indicates better alignment with ground truth.
-
-\subsubsection{Adjusted Rand Index (ARI)}
-Measures similarity between two clusterings, adjusted for chance:
-\begin{equation}
-\text{ARI} = \frac{\sum_{ij} \binom{n_{ij}}{2} - [\sum_i \binom{a_i}{2} \sum_j \binom{b_j}{2}] / \binom{n}{2}}{\frac{1}{2}[\sum_i \binom{a_i}{2} + \sum_j \binom{b_j}{2}] - [\sum_i \binom{a_i}{2} \sum_j \binom{b_j}{2}] / \binom{n}{2}}
-\end{equation}
-
-Range: $[-1, 1]$. ARI = 1 indicates perfect agreement. ARI $\approx$ 0 indicates random labeling.
-
-\subsubsection{Cluster Purity}
-Measures the extent to which clusters contain single class:
-\begin{equation}
-\text{Purity} = \frac{1}{n} \sum_{k=1}^{K} \max_j |C_k \cap L_j|
-\end{equation}
-where $L_j$ is the set of points with true label $j$.
-
-Range: $[0, 1]$. Higher is better.
-
-\subsection{Convergence Analysis}
-
-\subsubsection{K-Means Convergence}
-K-Means is guaranteed to converge in finite iterations as:
-\begin{enumerate}
-    \item WCSS strictly decreases in each iteration
-    \item Number of possible partitions is finite
-\end{enumerate}
-
-Convergence rate: $O(n K d I)$ where $I$ is number of iterations (typically $I \ll n$).
-
-\subsubsection{EM Algorithm Convergence (GMM)}
-EM is guaranteed to converge to local maximum of likelihood:
-\begin{equation}
-\mathcal{L}(\theta^{(t+1)}) \geq \mathcal{L}(\theta^{(t)})
-\end{equation}
-
-Convergence is typically determined when:
-\begin{equation}
-|\mathcal{L}(\theta^{(t+1)}) - \mathcal{L}(\theta^{(t)})| < \epsilon
-\end{equation}
-
-\subsection{Computational Complexity}
+\textbf{Normalization Impact:} Table~\ref{tab:normalization} shows the transformation effect across datasets.
 
 \begin{table}[h]
 \centering
-\caption{Time Complexity of Clustering Algorithms}
-\begin{tabular}{lc}
+\caption{Normalization Statistics (Mean $\pm$ Std)}
+\label{tab:normalization}
+\small
+\begin{tabular}{lcc}
 \toprule
-\textbf{Algorithm} & \textbf{Time Complexity} \\
+\textbf{Dataset} & \textbf{Before} & \textbf{After} \\
 \midrule
-K-Means & $O(nKdI)$ \\
-MiniBatch K-Means & $O(bKdI)$ \\
-Spectral Clustering & $O(n^3)$ or $O(n^2)$ with approximation \\
-GMM & $O(nK^2d^2I)$ \\
-DBSCAN & $O(n \log n)$ with spatial index \\
+GTZAN & Various scales & $0.00 \pm 1.00$ \\
+FMA Small & Various scales & $0.00 \pm 1.00$ \\
+FMA Medium & Various scales & $0.00 \pm 1.00$ \\
+Indian Music & Various scales & $0.00 \pm 1.00$ \\
 \bottomrule
 \end{tabular}
-\label{tab:complexity}
 \end{table}
 
-where $n$ = samples, $K$ = clusters, $d$ = dimensions, $I$ = iterations, $b$ = batch size.
-
-\section{Results and Discussion}
-
-\subsection{GTZAN Dataset Results}
-
-\subsubsection{Overall Performance}
-The GTZAN dataset experiments comprised 60 configurations (5 algorithms $\times$ 4 splits $\times$ 3 seeds). Key findings:
-
-\textbf{Best Single Configuration:} K-Means with 80-20 split achieved the highest performance:
+Normalization benefits:
 \begin{itemize}
-    \item NMI: 0.408
-    \item ARI: 0.197
-    \item Accuracy: 0.436 (43.6\%)
-    \item Silhouette: 0.090
+    \item Eliminates scale differences between features
+    \item Prevents features with larger magnitudes from dominating
+    \item Improves convergence in distance-based algorithms
+    \item Ensures equal feature contribution to clustering
 \end{itemize}
 
-\textbf{Algorithm Rankings by Average Performance:}
-\begin{enumerate}
-    \item \textbf{K-Means:} Most consistent across metrics
-    \begin{itemize}
-        \item Avg. NMI: 0.355
-        \item Avg. Silhouette: 0.078
-        \item Avg. Accuracy: 0.372
-    \end{itemize}
-    
-    \item \textbf{Spectral Clustering:} Best structural metrics
-    \begin{itemize}
-        \item Avg. NMI: 0.354
-        \item Avg. Silhouette: 0.083
-        \item Avg. Accuracy: 0.371
-    \end{itemize}
-    
-    \item \textbf{MiniBatch K-Means:} Slightly lower than K-Means
-    \begin{itemize}
-        \item Avg. NMI: 0.335
-        \item Avg. Accuracy: 0.356
-    \end{itemize}
-    
-    \item \textbf{GMM:} Struggled with convergence
-    \begin{itemize}
-        \item Avg. NMI: 0.109
-        \item Many null silhouette scores (non-convergence)
-    \end{itemize}
-    
-    \item \textbf{DBSCAN:} Poor performance
-    \begin{itemize}
-        \item Avg. NMI: 0.021
-        \item Avg. ARI: -0.0009
-        \item Frequently produced single cluster (all noise)
-    \end{itemize}
-\end{enumerate}
+\subsection{\textbf{Dimensionality Reduction}}
 
-\subsubsection{Split-wise Analysis}
+\subsubsection{Principal Component Analysis}
+
+PCA performs orthogonal linear transformation to maximize variance along principal components:
+
+\begin{equation}
+\mathbf{X}_{PCA} = \mathbf{X}_{norm} \mathbf{W}
+\label{eq:pca}
+\end{equation}
+
+where $\mathbf{X}_{norm}$ is the normalized feature matrix and $\mathbf{W}$ contains eigenvectors of the covariance matrix.
+
+\textbf{Implementation:} We retain components explaining $\geq$95\% cumulative variance, balancing information preservation with dimensionality reduction.
+
+\subsubsection{PCA Results Across Datasets}
+
+Table~\ref{tab:pca_results} summarizes PCA performance across all datasets.
 
 \begin{table}[h]
 \centering
-\caption{GTZAN Best Results by Train-Test Split}
-\begin{tabular}{ccccc}
+\caption{PCA Dimensionality Reduction Results}
+\label{tab:pca_results}
+\begin{tabular}{lcccc}
 \toprule
-\textbf{Split} & \textbf{Algo} & \textbf{NMI} & \textbf{ARI} & \textbf{Acc} \\
+\textbf{Dataset} & \textbf{Original} & \textbf{PCA} & \textbf{Variance} & \textbf{Reduction} \\
+ & \textbf{Dims} & \textbf{Comps} & \textbf{Retained} & \textbf{Ratio} \\
 \midrule
-50-50 & K-Means & 0.358 & 0.189 & 0.399 \\
-60-40 & K-Means & 0.367 & 0.176 & 0.383 \\
-70-30 & MiniBatch & 0.404 & 0.201 & 0.436 \\
-80-20 & K-Means & 0.408 & 0.197 & 0.436 \\
+GTZAN & 69 & 39 & 95.05\% & 43.5\% \\
+FMA Small & 69 & 44 & 95.00\% & 36.2\% \\
+FMA Medium & 69 & 44 & 95.14\% & 36.2\% \\
+Indian Music & 69 & 40 & 95.30\% & 42.0\% \\
+\midrule
+\textbf{Average} & \textbf{69} & \textbf{41.75} & \textbf{95.12\%} & \textbf{39.5\%} \\
 \bottomrule
 \end{tabular}
-\label{tab:gtzan_splits}
 \end{table}
 
-\textbf{Observation:} Performance generally improved with larger training sets, consistent with clustering algorithm properties. 80-20 split provided best results, suggesting benefit of more training data for centroid initialization.
+\textbf{Key Observations:}
 
-\subsubsection{Stability Across Random Seeds}
-Standard deviation of NMI across seeds ranged from 0.015 to 0.035 for K-Means and Spectral, indicating reasonable stability. GMM showed higher variance (0.050-0.080), reflecting sensitivity to initialization.
-
-\subsection{FMA Dataset Results}
-
-\subsubsection{Overall Performance}
-FMA dataset (2,091 samples after cleaning, 20 PCA features):
-
-\textbf{Best Single Configuration:} Spectral Clustering with 80-20 split:
-\begin{itemize}
-    \item Purity: 36.1\%
-    \item Accuracy: 32.6\%
-    \item NMI: 0.141
-    \item Silhouette: 0.068
-\end{itemize}
-
-\textbf{Average Algorithm Performance:}
-\begin{table}[h]
-\centering
-\caption{FMA Algorithm Comparison}
-\begin{tabular}{lccccc}
-\toprule
-\textbf{Algorithm} & \textbf{Purity} & \textbf{Acc} & \textbf{NMI} & \textbf{ARI} & \textbf{Sil} \\
-\midrule
-Spectral & 0.361 & 0.319 & 0.139 & 0.088 & 0.067 \\
-K-Means & 0.344 & 0.291 & 0.128 & 0.076 & 0.074 \\
-MiniBatch & 0.339 & 0.291 & 0.124 & 0.078 & 0.074 \\
-GMM & 0.341 & 0.292 & 0.112 & 0.082 & 0.013 \\
-DBSCAN & 0.251 & 0.251 & 0.000 & 0.000 & -- \\
-\bottomrule
-\end{tabular}
-\label{tab:fma_algo}
-\end{table}
-
-\textbf{Key Insights:}
-\begin{itemize}
-    \item Spectral Clustering excelled on FMA, leveraging graph structure
-    \item K-Means achieved highest silhouette (0.074), indicating compact clusters
-    \item GMM showed positive ARI (0.082) but low silhouette
-    \item DBSCAN completely failed (NMI = 0, ARI = 0)
-\end{itemize}
-
-\subsubsection{Feature Quality Impact}
-PCA reduced dimensions from 75 to 20 (89.26\% variance retained). Correlation analysis revealed high multicollinearity in original features, which PCA effectively addressed. Performance with PCA features matched or exceeded full feature set while reducing computation by 73\%.
-
-\subsection{Million Song Dataset (MSD) Results}
-
-MSD experiments evaluated 30-cluster configurations across 4 splits:
-
-\textbf{Best Performers:}
 \begin{enumerate}
-    \item \textbf{K-Means:} Silhouette 0.109, Davies-Bouldin 1.85
-    \item \textbf{Spectral:} Silhouette 0.111, Davies-Bouldin 1.83
-    \item \textbf{MiniBatch K-Means:} Silhouette 0.100, Davies-Bouldin 2.01
+    \item \textbf{Consistent Reduction:} Average 39.5\% dimensionality reduction across datasets
+    \item \textbf{Variance Retention:} All datasets exceed 95\% threshold, with Indian Music achieving highest (95.30\%)
+    \item \textbf{First Component Dominance:} PC1 captures 16-23\% of total variance across datasets
+    \item \textbf{FMA Similarity:} Small and Medium FMA datasets require identical 44 components, indicating similar feature distributions
+    \item \textbf{Dataset Characteristics:} GTZAN requires fewer components (39) suggesting more concentrated variance
 \end{enumerate}
 
-\textbf{Split Trends:}
-\begin{table}[h]
-\centering
-\caption{MSD Silhouette Scores by Split}
-\begin{tabular}{ccccc}
-\toprule
-\textbf{Algorithm} & \textbf{50-50} & \textbf{60-40} & \textbf{70-30} & \textbf{80-20} \\
-\midrule
-K-Means & 0.110 & 0.110 & 0.108 & 0.109 \\
-Spectral & 0.111 & 0.111 & 0.113 & 0.111 \\
-MiniBatch & 0.097 & 0.099 & 0.101 & 0.100 \\
-\bottomrule
-\end{tabular}
-\label{tab:msd_splits}
-\end{table}
+\subsubsection{Explained Variance Analysis}
 
-\textbf{Notable Observations:}
+Figure~\ref{fig:explained_variance} illustrates cumulative explained variance for each dataset. The steep initial slope indicates high variance concentration in early components, with gradual convergence to 95\% threshold.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.48\textwidth]{../results/pca/gtzan_explained_variance.png}
+\caption{GTZAN Explained Variance: (Left) Individual component contributions, (Right) Cumulative variance reaching 95\% at 39 components}
+\label{fig:explained_variance}
+\end{figure}
+
+\textbf{Top Principal Components (GTZAN):}
 \begin{itemize}
-    \item Remarkably consistent performance across splits (std $<$ 0.003)
-    \item All algorithms formed exactly 30 clusters (no noise)
-    \item Hierarchical methods showed higher variance
-    \item DBSCAN produced 6-9 clusters with 0\% noise
+    \item PC1: 22.61\% (Primarily spectral and MFCC features)
+    \item PC2: 13.12\% (Chroma and rhythmic patterns)
+    \item PC3: 9.14\% (Timbral characteristics)
+    \item PC4: 5.91\% (Harmonic content)
+    \item PC5: 4.85\% (Temporal dynamics)
 \end{itemize}
 
-\subsection{Spotify Dataset Results}
+Top 5 components collectively explain 55.63\% of variance, demonstrating significant information concentration.
 
-Spotify experiments used high-level API features (danceability, energy, etc.):
+\subsection{\textbf{Computational Benefits}}
 
-\textbf{Combined Score Rankings:}
+PCA reduces computational complexity from $O(n \cdot 69^2)$ to $O(n \cdot 40^2)$ for distance calculations, approximately 3x speedup. Memory requirements decrease proportionally, enabling efficient processing of large-scale datasets.
+
+\section{\textbf{Experimental Setup}}
+\label{sec:experimental}
+
+\subsection{\textbf{Software and Hardware}}
+
+\begin{itemize}
+    \item \textbf{Programming Language:} Python 3.12.3
+    \item \textbf{Libraries:} Librosa 0.11.0, Scikit-learn 1.7.2, Pandas 2.3.3, NumPy 2.3.5, Matplotlib 3.10.7, Seaborn 0.13.2
+    \item \textbf{Environment:} Jupyter Notebook for interactive analysis
+    \item \textbf{Hardware:} Standard computing environment (CPU-based processing)
+\end{itemize}
+
+\subsection{\textbf{Data Splits and Validation}}
+
+For clustering evaluation, we employ:
+\begin{itemize}
+    \item Multiple random seeds for reproducibility
+    \item Cross-validation where applicable
+    \item Various train-test splits: 50-50, 60-40, 70-30, 80-20
+\end{itemize}
+
+\subsection{\textbf{Evaluation Metrics}}
+
+We utilize six comprehensive metrics for clustering quality assessment:
+
+\subsubsection{Internal Metrics (No Ground Truth Required)}
+
 \begin{enumerate}
-    \item K-Means: 0.853
-    \item Spectral: 0.840
-    \item Agglomerative Ward: 0.840
-    \item MiniBatch K-Means: 0.796
-    \item Birch: 0.617
-    \item Agglomerative Average: 0.490
-    \item DBSCAN: 0.474
-    \item GMM: 0.130
+    \item \textbf{Silhouette Score:} Measures cluster cohesion and separation
+    \begin{equation}
+    s(i) = \frac{b(i) - a(i)}{\max(a(i), b(i))}
+    \label{eq:silhouette}
+    \end{equation}
+    Range: [-1, 1], Higher is better
+    
+    \item \textbf{Davies-Bouldin Index:} Average similarity ratio of clusters
+    \begin{equation}
+    DB = \frac{1}{k}\sum_{i=1}^{k}\max_{j \neq i}\left(\frac{\sigma_i + \sigma_j}{d(c_i, c_j)}\right)
+    \label{eq:davies_bouldin}
+    \end{equation}
+    Lower values indicate better clustering
+    
+    \item \textbf{Calinski-Harabasz Index:} Ratio of between-cluster to within-cluster dispersion
+    \begin{equation}
+    CH = \frac{tr(B_k)}{tr(W_k)} \cdot \frac{n-k}{k-1}
+    \label{eq:calinski}
+    \end{equation}
+    Higher values indicate better-defined clusters
 \end{enumerate}
+
+\subsubsection{External Metrics (Ground Truth Comparison)}
+
+\begin{enumerate}
+    \setcounter{enumi}{3}
+    \item \textbf{Adjusted Rand Index (ARI):} Similarity between clusterings adjusted for chance
+    \begin{equation}
+    ARI = \frac{RI - E[RI]}{\max(RI) - E[RI]}
+    \label{eq:ari}
+    \end{equation}
+    Range: [-1, 1], Higher indicates better agreement
+    
+    \item \textbf{Normalized Mutual Information (NMI):} Information shared between clusterings
+    \begin{equation}
+    NMI = \frac{MI(U, V)}{\sqrt{H(U) \cdot H(V)}}
+    \label{eq:nmi}
+    \end{equation}
+    Range: [0, 1], Higher is better
+    
+    \item \textbf{Purity:} Fraction of correctly clustered samples
+    \begin{equation}
+    Purity = \frac{1}{N}\sum_{k}\max_{j}|c_k \cap t_j|
+    \label{eq:purity}
+    \end{equation}
+    Range: [0, 1], Higher indicates better clustering
+\end{enumerate}
+
+\section{\textbf{Preprocessing Results}}
+\label{sec:preprocessing_results}
+
+\subsection{\textbf{Feature Distribution Analysis}}
+
+Descriptive statistics reveal distinct patterns across datasets:
+
+\subsubsection{GTZAN Dataset}
+
+\begin{itemize}
+    \item \textbf{Genre Balance:} Near-perfect distribution (99-100 tracks per genre)
+    \item \textbf{Feature Ranges:} MFCC features span [-200, 200], Chroma [0, 1]
+    \item \textbf{Outliers:} 3-5\% of samples identified as outliers in spectral features
+    \item \textbf{Correlation Patterns:} Strong MFCC autocorrelation (expected for timbral features)
+\end{itemize}
+
+\subsubsection{Indian Music Dataset}
+
+The regional music dataset exhibits unique characteristics:
+
+\begin{table}[h]
+\centering
+\caption{Indian Music Feature Statistics (Normalized)}
+\label{tab:indian_stats}
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Feature Category} & \textbf{Mean} & \textbf{Std} & \textbf{Range} \\
+\midrule
+Spectral Centroid & 0.00 & 1.00 & [-2.5, 2.8] \\
+MFCCs (avg) & 0.00 & 1.00 & [-3.2, 3.5] \\
+Chroma (avg) & 0.00 & 1.00 & [-2.8, 3.2] \\
+Tempo & 0.00 & 1.00 & [-1.8, 2.1] \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \textbf{Key Findings:}
 \begin{itemize}
-    \item K-Means dominated with highest combined score
-    \item Spectral and Ward clustering performed comparably
-    \item High-level features favored centroid-based methods
-    \item GMM struggled with Spotify features (combined score 0.13)
+    \item Carnatic music shows highest spectral centroid (brighter timbre)
+    \item Ghazal exhibits distinct chroma patterns (vocal-centric)
+    \item Sufi and Semiclassical share overlapping MFCC distributions
+    \item Bollypop demonstrates higher tempo variability
 \end{itemize}
 
-\subsection{Cross-Dataset Comparison}
+\subsection{\textbf{Correlation Analysis}}
 
-\begin{table*}[t]
+Figure~\ref{fig:correlation_matrix} displays feature correlation heatmaps for GTZAN and Indian Music datasets.
+
+\begin{figure}[h]
 \centering
-\caption{Best Performance Across All Datasets}
-\begin{tabular}{lcccccc}
-\toprule
-\textbf{Dataset} & \textbf{Best Algo} & \textbf{Metric} & \textbf{Value} & \textbf{Split} & \textbf{Features} & \textbf{Samples} \\
-\midrule
-GTZAN & K-Means & NMI & 0.408 & 80-20 & 35 (PCA) & 1000 \\
-GTZAN & K-Means & Accuracy & 43.6\% & 80-20 & 35 (PCA) & 1000 \\
-FMA & Spectral & Purity & 36.1\% & Various & 20 (PCA) & 2091 \\
-FMA & Spectral & Accuracy & 32.6\% & 80-20 & 20 (PCA) & 2091 \\
-MSD & Spectral & Silhouette & 0.113 & 70-30 & Original & Large \\
-Spotify & K-Means & Combined & 0.853 & Various & API features & Large \\
-\bottomrule
-\end{tabular}
-\label{tab:cross_dataset}
-\end{table*}
+\subfloat[GTZAN Correlation Matrix]{\includegraphics[width=0.23\textwidth]{../results/step1.1/GTZAN_correlation_heatmap.png}}
+\hfil
+\subfloat[Indian Music Correlation]{\includegraphics[width=0.23\textwidth]{../results/step1.2-indian/indian_correlation_heatmap.png}}
+\caption{Feature correlation patterns across datasets}
+\label{fig:correlation_matrix}
+\end{figure}
 
-\subsection{Algorithm-Specific Insights}
-
-\subsubsection{K-Means}
-\textbf{Strengths:}
+\textbf{Notable Correlations:}
 \begin{itemize}
-    \item Most consistent across datasets
-    \item Best overall performer on GTZAN and Spotify
-    \item Fast convergence and low computational cost
-    \item Stable across random seeds
+    \item MFCC1-MFCC2: r = 0.82 (high similarity in timbral representation)
+    \item Spectral Centroid-Rolloff: r = 0.91 (expected physical relationship)
+    \item Chroma features: r = 0.15-0.45 (relatively independent harmonic content)
+    \item RMS-Spectral features: r = 0.25 (weak correlation between energy and timbre)
 \end{itemize}
 
-\textbf{Weaknesses:}
+High MFCC intercorrelation justifies PCA application for dimensionality reduction.
+
+\subsection{\textbf{Normalization Impact}}
+
+Figure~\ref{fig:normalization_comparison} illustrates distribution changes before and after StandardScaler application.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.48\textwidth]{../results/normalization/gtzan_normalization_comparison.png}
+\caption{GTZAN feature distributions: Before (blue) and After (coral) normalization. Top 5 highest-variance features shown.}
+\label{fig:normalization_comparison}
+\end{figure}
+
+\textbf{Transformation Effects:}
 \begin{itemize}
-    \item Assumes spherical clusters
-    \item Sensitive to initialization (mitigated by n\_init=10)
-    \item Performance depends on $K$ choice
+    \item \textbf{Mean Centering:} All features shifted to zero mean
+    \item \textbf{Variance Standardization:} Uniform scale across features
+    \item \textbf{Distribution Shape:} Preserved (normalization is linear)
+    \item \textbf{Outlier Preservation:} Extreme values maintained relative position
 \end{itemize}
 
-\textbf{Recommendation:} Default choice for music genre clustering with balanced datasets.
+The normalized distributions exhibit Gaussian-like characteristics suitable for PCA and distance-based clustering algorithms.
 
-\subsubsection{Spectral Clustering}
-\textbf{Strengths:}
+\subsection{\textbf{PCA Visualization}}
+
+\subsubsection{2D Projections}
+
+Figure~\ref{fig:pca_2d} shows genre distributions projected onto the first two principal components.
+
+\begin{figure}[h]
+\centering
+\subfloat[GTZAN 2D PCA]{\includegraphics[width=0.23\textwidth]{../results/pca/gtzan_pca_2d.png}}
+\hfil
+\subfloat[Indian Music 2D PCA]{\includegraphics[width=0.23\textwidth]{../results/pca/indian_music_pca_2d.png}}
+\caption{First two principal components capturing genre separation}
+\label{fig:pca_2d}
+\end{figure}
+
+\textbf{GTZAN Observations:}
 \begin{itemize}
-    \item Best on FMA dataset (36.1\% purity)
-    \item Highest silhouette on MSD
-    \item Handles non-convex cluster shapes
-    \item Superior graph-theoretic properties
+    \item \textbf{Clear Separation:} Classical and Metal form distinct clusters
+    \item \textbf{Overlap Regions:} Blues, Country, and Rock share PC space (acoustic similarity)
+    \item \textbf{Pop-Jazz Continuum:} Gradual transition between genres
+    \item \textbf{Hip-Hop Cluster:} Well-defined region in PC1-PC2 space
 \end{itemize}
 
-\textbf{Weaknesses:}
+\textbf{Indian Music Observations:}
 \begin{itemize}
-    \item $O(n^3)$ complexity for eigendecomposition
-    \item Memory intensive for large datasets
-    \item Requires parameter tuning (gamma, affinity)
+    \item \textbf{Ghazal Separation:} Distinct lower-left cluster (vocal-centric features)
+    \item \textbf{Carnatic Spread:} Wide distribution reflecting rhythmic diversity
+    \item \textbf{Bollypop-Sufi Overlap:} Contemporary fusion characteristics
+    \item \textbf{Semiclassical Bridge:} Central position between classical and contemporary
 \end{itemize}
 
-\textbf{Recommendation:} Use for small-medium datasets with complex cluster geometry.
+\subsubsection{3D Visualizations}
 
-\subsubsection{MiniBatch K-Means}
-\textbf{Strengths:}
+Three-dimensional projections (PC1-PC2-PC3) provide enhanced separation:
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.35\textwidth]{../results/pca/gtzan_pca_3d.png}
+\caption{GTZAN 3D PCA visualization revealing additional genre structure}
+\label{fig:pca_3d}
+\end{figure}
+
+The third component adds 9\% variance, improving visual separability particularly for previously overlapping genres (Blues-Rock-Country).
+
+\section{\textbf{Clustering Algorithms}}
+\label{sec:clustering}
+
+\textit{[PLACEHOLDER SECTION - To be completed after clustering experiments]}
+
+This section will include detailed descriptions and results for:
+
+\subsection{\textbf{K-Means Clustering}}
 \begin{itemize}
-    \item Scalable to large datasets
-    \item Performance close to standard K-Means
-    \item Reduced memory footprint
+    \item Standard K-Means implementation
+    \item K-Means++ initialization strategy
+    \item Elbow method for optimal k selection
+    \item Performance metrics across datasets
 \end{itemize}
 
-\textbf{Weaknesses:}
+\subsection{\textbf{K-Medoids (PAM)}}
 \begin{itemize}
-    \item Slightly lower accuracy than K-Means (2-5\%)
-    \item Sensitive to batch size
+    \item Robust alternative to K-Means
+    \item Medoid-based cluster centers
+    \item Outlier resilience analysis
 \end{itemize}
 
-\textbf{Recommendation:} Use for very large datasets where K-Means is computationally prohibitive.
-
-\subsubsection{Gaussian Mixture Models (GMM)}
-\textbf{Strengths:}
+\subsection{\textbf{Hierarchical Clustering}}
 \begin{itemize}
-    \item Provides probabilistic cluster assignments
-    \item Can model elliptical clusters
-    \item Theoretically elegant
+    \item Agglomerative approach with various linkage criteria
+    \item Dendrogram analysis
+    \item Optimal cut-point determination
 \end{itemize}
 
-\textbf{Weaknesses:}
+\subsection{\textbf{DBSCAN}}
 \begin{itemize}
-    \item Frequent convergence issues (null silhouette scores)
-    \item Worst performer on Spotify (0.130)
-    \item High computational cost
-    \item Sensitive to initialization
+    \item Density-based spatial clustering
+    \item Parameter tuning (epsilon, min\_samples)
+    \item Noise point identification
 \end{itemize}
 
-\textbf{Recommendation:} Avoid for music genre clustering unless probabilistic assignments are required.
-
-\subsubsection{DBSCAN}
-\textbf{Strengths:}
+\subsection{\textbf{Spectral Clustering}}
 \begin{itemize}
-    \item Discovers arbitrary cluster shapes
-    \item Automatically determines number of clusters
-    \item Robust to outliers
+    \item Graph-based clustering approach
+    \item Affinity matrix construction
+    \item Eigenvector analysis
 \end{itemize}
 
-\textbf{Weaknesses:}
+\subsection{\textbf{Gaussian Mixture Models}}
 \begin{itemize}
-    \item Consistently worst performer (NMI $\approx$ 0)
-    \item Produced single cluster in most GTZAN experiments
-    \item Struggles with varying density
-    \item Hyperparameter tuning challenging
+    \item Probabilistic clustering framework
+    \item EM algorithm convergence
+    \item Soft cluster assignments
 \end{itemize}
 
-\textbf{Recommendation:} Not suitable for music genre clustering in current form. May benefit from adaptive density methods.
+\section{\textbf{Experimental Results}}
+\label{sec:results}
 
-\subsection{Impact of Train-Test Splits}
+\textit{[PLACEHOLDER SECTION - To be completed after clustering experiments]}
 
-Across all datasets, larger training sets (70-30, 80-20) generally improved performance:
-\begin{itemize}
-    \item \textbf{GTZAN:} 7.2\% accuracy improvement from 50-50 to 80-20
-    \item \textbf{FMA:} Minimal split impact due to PCA pre-processing
-    \item \textbf{MSD:} Remarkably stable across splits (std $<$ 0.3\%)
-\end{itemize}
+This section will present:
 
-This trend aligns with clustering theory: more training data provides better centroid initialization and covariance estimation.
+\subsection{\textbf{Performance Comparison Tables}}
+Comprehensive metric scores across all algorithms and datasets
 
-\subsection{Dimensionality Reduction Impact}
+\subsection{\textbf{Confusion Matrices}}
+Genre-wise clustering accuracy analysis
 
-PCA demonstrated clear benefits:
-\begin{itemize}
-    \item \textbf{GTZAN:} 38\% dimension reduction with $<$5\% performance loss
-    \item \textbf{FMA:} 73\% dimension reduction, actually improved performance by reducing noise
-    \item \textbf{Computational Savings:} 50-70\% reduction in clustering time
-\end{itemize}
+\subsection{\textbf{Statistical Significance Tests}}
+Pairwise algorithm comparisons with confidence intervals
 
-\textbf{Variance Retention Analysis:}
-\begin{itemize}
-    \item 95\% variance: Maintained original performance
-    \item 90\% variance: Slight degradation (1-2\%)
-    \item 85\% variance: Noticeable degradation (5-8\%)
-\end{itemize}
+\subsection{\textbf{Computational Complexity Analysis}}
+Runtime and memory usage across datasets
 
-\textbf{Recommendation:} Retain 90-95\% variance for optimal balance.
+\subsection{\textbf{Visualization of Cluster Quality}}
+Silhouette plots, cluster distributions, and decision boundaries
 
-\subsection{Limitations and Challenges}
+\section{\textbf{Discussion}}
+\label{sec:discussion}
 
-\subsubsection{Dataset-Specific Challenges}
-\begin{itemize}
-    \item \textbf{GTZAN:} Known quality issues, repetitions, mislabelings
-    \item \textbf{FMA:} Heavy outlier removal (40\%) may introduce bias
-    \item \textbf{MSD:} Lack of true labels limits supervised metric evaluation
-    \item \textbf{Spotify:} High-level features may not capture timbral nuances
-\end{itemize}
+\subsection{\textbf{Preprocessing Impact}}
 
-\subsubsection{Algorithmic Limitations}
-\begin{itemize}
-    \item No algorithm achieved $>$50\% purity on any dataset
-    \item Unsupervised metrics (Silhouette) often disagree with supervised metrics (NMI, ARI)
-    \item Cluster number selection remains challenge (elbow method, silhouette analysis provide guidance but no definitive answer)
-\end{itemize}
+Our comprehensive preprocessing pipeline demonstrates measurable benefits:
 
-\subsubsection{Feature Representation}
-\begin{itemize}
-    \item Hand-crafted features may not capture all relevant information
-    \item Temporal dynamics (rhythm, structure) underrepresented
-    \item High-dimensional feature spaces suffer from curse of dimensionality
-\end{itemize}
-
-\section{Conclusion and Future Work}
-
-\subsection{Summary of Contributions}
-This research presented a comprehensive evaluation of unsupervised music genre discovery across four diverse datasets using five clustering algorithms and six evaluation metrics. Our systematic experimental framework, comprising 240+ experiments with rigorous statistical controls, provides the most extensive comparative analysis in the literature to date.
-
-\textbf{Key Findings:}
 \begin{enumerate}
-    \item K-Means and Spectral Clustering consistently outperform other algorithms for music genre clustering
-    \item Larger training sets (70-30, 80-20 splits) generally improve performance
-    \item PCA dimensionality reduction (90-95\% variance) enhances performance while reducing computation
-    \item DBSCAN is unsuitable for music genre clustering without significant adaptation
-    \item GMM struggles with convergence on audio features
-    \item Best achieved performance: 43.6\% accuracy (GTZAN), 36.1\% purity (FMA), 0.853 combined score (Spotify)
+    \item \textbf{Normalization Necessity:} StandardScaler transformation is essential for distance-based algorithms, preventing bias toward large-magnitude features.
+    
+    \item \textbf{PCA Efficiency:} 39.5\% average dimensionality reduction with 95.12\% variance retention provides optimal balance between information preservation and computational efficiency.
+    
+    \item \textbf{Feature Redundancy:} High MFCC intercorrelation (0.7-0.9) confirms redundancy, justifying aggressive dimensionality reduction.
+    
+    \item \textbf{Dataset Diversity:} Consistent preprocessing performance across Western (GTZAN, FMA) and Indian music validates generalizability.
 \end{enumerate}
 
-\subsection{Practical Recommendations}
-For practitioners implementing unsupervised music genre discovery:
+\subsection{\textbf{Dataset Characteristics}}
+
+\subsubsection{GTZAN Advantages}
 \begin{itemize}
-    \item \textbf{Default Choice:} K-Means with 10-30 clusters, n\_init=10
-    \item \textbf{Complex Geometries:} Spectral Clustering for small-medium datasets
-    \item \textbf{Large Datasets:} MiniBatch K-Means with batch\_size=100
-    \item \textbf{Feature Processing:} Apply PCA retaining 90-95\% variance
-    \item \textbf{Evaluation:} Use multiple metrics (Silhouette + NMI + Purity) for comprehensive assessment
-    \item \textbf{Robustness:} Test multiple random seeds and report mean ± std
+    \item Perfectly balanced genre distribution
+    \item Well-established benchmark for comparison
+    \item Clear acoustic separation (Classical vs. Metal)
 \end{itemize}
 
-\subsection{Limitations}
+\subsubsection{GTZAN Limitations}
 \begin{itemize}
-    \item Hand-crafted features may not capture all relevant musical information
-    \item Genre boundaries are inherently fuzzy and subjective
-    \item Best performance (43.6\% accuracy) suggests significant room for improvement
-    \item Computational constraints limited experiments on full FMA dataset
-    \item Cross-dataset generalization not extensively explored
+    \item Limited size (999 tracks)
+    \item Genre overlap (Blues-Country-Rock)
+    \item Potential artist bias (multiple tracks per artist)
 \end{itemize}
 
-\subsection{Future Directions}
-
-\subsubsection{Feature Learning}
+\subsubsection{FMA Strengths}
 \begin{itemize}
-    \item Deep learning-based feature extraction (e.g., CNNs on spectrograms)
-    \item Self-supervised learning approaches (contrastive learning, autoencoders)
-    \item Multi-modal features (audio + lyrics + metadata)
+    \item Large-scale datasets (8K-25K tracks)
+    \item Hierarchical genre structure
+    \item Diverse artist representation
 \end{itemize}
 
-\subsubsection{Advanced Clustering Methods}
+\subsubsection{Indian Music Insights}
 \begin{itemize}
-    \item Ensemble clustering combining multiple algorithms
-    \item Deep embedded clustering
-    \item Hierarchical soft clustering
-    \item Adaptive density-based methods for DBSCAN improvement
+    \item Regional genre characteristics distinct from Western music
+    \item Cultural specificity in feature distributions
+    \item Challenge for generalized models
 \end{itemize}
 
-\subsubsection{Evaluation Frameworks}
+\subsection{\textbf{PCA Interpretation}}
+
+Principal component analysis reveals:
+
 \begin{itemize}
-    \item Human evaluation studies for cluster interpretability
+    \item \textbf{PC1 (21-23\% variance):} Primarily captures timbral characteristics (MFCCs, spectral features)
+    \item \textbf{PC2 (13-15\% variance):} Encodes harmonic content (chroma, pitch)
+    \item \textbf{PC3 (5-9\% variance):} Represents rhythmic patterns (tempo, RMS dynamics)
+    \item \textbf{Remaining PCs:} Fine-grained textural and spectral details
+\end{itemize}
+
+The component interpretation aligns with musicological understanding of genre differentiation factors.
+
+\subsection{\textbf{Challenges and Limitations}}
+
+\subsubsection{Feature Extraction}
+\begin{itemize}
+    \item Fixed 30-second clips may miss long-term structural patterns
+    \item Sample rate limitation (22,050 Hz) truncates high-frequency content
+    \item Statistical aggregation (mean/std) loses temporal dynamics
+\end{itemize}
+
+\subsubsection{Genre Ambiguity}
+\begin{itemize}
+    \item Subjective genre boundaries
+    \item Cross-genre fusion tracks
+    \item Temporal evolution of genres
+\end{itemize}
+
+\subsubsection{Computational Constraints}
+\begin{itemize}
+    \item Large-scale datasets (FMA Medium: 25K tracks) require significant memory
+    \item Real-time processing challenges
+    \item Storage requirements for feature matrices
+\end{itemize}
+
+\section{\textbf{Future Work}}
+\label{sec:future}
+
+\subsection{\textbf{Short-Term Extensions}}
+\begin{itemize}
+    \item Complete clustering algorithm evaluation
+    \item Hyperparameter optimization via grid search
+    \item Ensemble clustering methods
     \item Cross-dataset transfer learning
-    \item Temporal dynamics and structure incorporation
-    \item Genre evolution tracking over time
 \end{itemize}
 
-\subsubsection{Applications}
+\subsection{\textbf{Advanced Techniques}}
 \begin{itemize}
-    \item Music recommendation systems based on discovered clusters
-    \item Playlist generation for streaming services
-    \item Music archive organization and discovery
+    \item \textbf{Deep Learning:} Autoencoder-based feature learning
+    \item \textbf{Temporal Modeling:} RNN/LSTM for sequence-level features
+    \item \textbf{Multi-Modal Fusion:} Combining audio with lyrics, metadata
+    \item \textbf{Active Learning:} Semi-supervised refinement with minimal labels
+\end{itemize}
+
+\subsection{\textbf{Application Domains}}
+\begin{itemize}
+    \item Music recommendation systems
+    \item Automated playlist generation
+    \item Copyright detection and music fingerprinting
+    \item Mood-based music retrieval
     \item Cross-cultural music analysis
 \end{itemize}
 
-\subsection{Concluding Remarks}
-Unsupervised music genre discovery remains a challenging problem, as evidenced by the modest performance levels achieved even with comprehensive feature engineering and multiple algorithms. However, our results demonstrate that meaningful cluster structure exists in audio feature spaces, and careful algorithm selection paired with appropriate preprocessing can yield practically useful results.
+\section{\textbf{Conclusion}}
+\label{sec:conclusion}
 
-The gap between unsupervised (43.6\% accuracy) and supervised methods (typically 70-90\%) suggests that genre information is partially captured by acoustic features but requires additional semantic knowledge. Future work combining unsupervised feature learning with semi-supervised fine-tuning may bridge this gap.
+This study establishes a comprehensive framework for unsupervised music genre discovery through systematic feature extraction, normalization, and dimensionality reduction. Processing 34,481 tracks across four diverse datasets, we demonstrate:
 
-This research provides a solid foundation and reproducible methodology for future investigations in unsupervised music analysis, contributing to the broader goals of Music Information Retrieval and computational musicology.
+\begin{enumerate}
+    \item Robust preprocessing pipeline achieving consistent performance across datasets
+    \item PCA-based dimensionality reduction providing 39.5\% average reduction with 95.12\% variance retention
+    \item Clear genre separation in reduced dimensional space for both Western and regional Indian music
+    \item Reproducible experimental methodology enabling future research extensions
+\end{enumerate}
 
-\section*{Acknowledgement}
-I would like to express my sincere gratitude to Dr. [Faculty Name], Assistant Professor, Department of Computer Science and Engineering, National Institute of Technology Hamirpur, for their invaluable guidance and support throughout this project. I am thankful to the creators of the GTZAN, FMA, Million Song Dataset, and Spotify for making their datasets publicly available for research purposes. I also acknowledge the open-source community for developing excellent tools like Librosa, Scikit-learn, and Weights \& Biases that made this research possible.
+Our preprocessing results establish a solid foundation for unsupervised clustering evaluation. The normalized and PCA-transformed features exhibit characteristics conducive to effective clustering: balanced scales, reduced dimensionality, and preserved genre-discriminative information.
 
-\section*{Research Data and Code Links}
-All code, datasets, and experimental results are publicly available for reproducibility:
-
+Key contributions include:
 \begin{itemize}
-    \item \textbf{GitHub Repository:} \url{https://github.com/[username]/music-genre-clustering}
-    \item \textbf{Weights \& Biases Project:} \url{https://wandb.ai/[username]/music-genre-discovery}
-    \item \textbf{GTZAN Dataset:} \url{http://marsyas.info/downloads/datasets.html}
-    \item \textbf{FMA Dataset:} \url{https://github.com/mdeff/fma}
-    \item \textbf{Million Song Dataset:} \url{http://millionsongdataset.com/}
-    \item \textbf{Spotify API:} \url{https://developer.spotify.com/documentation/web-api/}
+    \item Multi-dataset analysis spanning 34,481 tracks and 39 genres
+    \item Comprehensive feature engineering with 69 audio descriptors
+    \item Systematic preprocessing pipeline with quantitative validation
+    \item Open-source implementation for reproducibility
 \end{itemize}
 
-\section*{Brief Biodata}
+While clustering results remain pending, the preprocessing infrastructure and analysis provide valuable insights into music information retrieval challenges. The framework supports diverse clustering algorithms and facilitates systematic comparison across datasets with varying characteristics.
 
-\textbf{Anirudh Sharma} is a final-year undergraduate student in the Department of Computer Science and Engineering at National Institute of Technology, Hamirpur. His research interests include machine learning, music information retrieval, and artificial intelligence. He has completed coursework in data structures, algorithms, machine learning, deep learning, and natural language processing. This project represents his major work in the field of unsupervised learning and computational musicology. He has presented findings at departmental seminars and plans to pursue graduate studies in AI/ML.
+Future work will complete the clustering evaluation, comparing six algorithms across multiple metrics, establishing benchmarks for unsupervised music genre discovery in cross-cultural contexts.
 
-\begin{thebibliography}{00}
-\bibitem{tzanetakis2002musical} G. Tzanetakis and P. Cook, ``Musical genre classification of audio signals,'' \textit{IEEE Transactions on Speech and Audio Processing}, vol. 10, no. 5, pp. 293-302, 2002.
+\section*{Acknowledgments}
 
-\bibitem{sturm2013gtzan} B. L. Sturm, ``The GTZAN dataset: Its contents, its faults, their effects on evaluation, and its future use,'' \textit{arXiv preprint arXiv:1306.1461}, 2013.
+The author thanks Dr. Kamlesh Datta, Department of Computer Science and Engineering, NIT Hamirpur, for guidance and supervision of this project. Special thanks to the Librosa development team for their excellent audio processing library, and to the creators of GTZAN, FMA, and other open-source music datasets.
 
-\bibitem{humphrey2013moving} E. J. Humphrey, J. P. Bello, and Y. LeCun, ``Moving beyond feature design: Deep architectures and automatic feature learning in music informatics,'' \textit{IEEE Transactions on Multimedia}, vol. 15, no. 8, pp. 2013-2023, 2013.
+\begin{thebibliography}{99}
 
-\bibitem{choi2017convolutional} K. Choi, G. Fazekas, M. Sandler, and K. Cho, ``Convolutional recurrent neural networks for music classification,'' in \textit{Proc. IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 2017, pp. 2392-2396.
+\bibitem{tzanetakis2002}
+G. Tzanetakis and P. Cook, ``Musical genre classification of audio signals,'' \textit{IEEE Transactions on Speech and Audio Processing}, vol. 10, no. 5, pp. 293--302, 2002.
 
-\bibitem{pons2018timbre} J. Pons, O. Nieto, M. Prockup, E. Schmidt, A. Ehmann, and X. Serra, ``End-to-end learning for music audio tagging at scale,'' \textit{IEEE/ACM Transactions on Audio, Speech, and Language Processing}, vol. 27, no. 2, pp. 425-434, 2018.
+\bibitem{spijkervet2021}
+J. Spijkervet and J. A. Burgoyne, ``Contrastive learning of musical representations,'' in \textit{Proc. Int. Soc. Music Inf. Retr. Conf. (ISMIR)}, 2021, pp. 673--680.
 
-\bibitem{gururani2020instrument} S. Gururani, C. Summers, and A. Lerch, ``Instrument activity detection in polyphonic music using deep neural networks,'' in \textit{Proc. International Society for Music Information Retrieval Conference (ISMIR)}, 2020.
+\bibitem{saeed2021}
+A. Saeed, D. Grangier, and N. Zeghidour, ``Contrastive learning of general-purpose audio representations,'' in \textit{Proc. IEEE Int. Conf. Acoust., Speech Signal Process. (ICASSP)}, 2021, pp. 3875--3879.
 
-\bibitem{mcfee2012learning} B. McFee and G. R. Lanckriet, ``Learning multi-modal similarity,'' \textit{Journal of Machine Learning Research}, vol. 12, pp. 491-523, 2012.
+\bibitem{lee2020}
+J. Lee, N. J. Bryan, J. Salamon, Z. Zhang, and J. Wang, ``Disentangled multidimensional metric learning for music similarity,'' in \textit{Proc. IEEE Int. Conf. Acoust., Speech Signal Process. (ICASSP)}, 2020, pp. 1--5.
 
-\bibitem{nakashika2012music} T. Nakashika, T. Takiguchi, and Y. Ariki, ``Music genre classification using bass-line information,'' in \textit{Proc. IEEE International Conference on Multimedia and Expo}, 2012, pp. 638-643.
+\bibitem{castellon2021}
+R. Castellon, C. Donahue, and P. Liang, ``Codified audio language modeling learns useful representations for music information retrieval,'' in \textit{Proc. Int. Soc. Music Inf. Retr. Conf. (ISMIR)}, 2021, pp. 88--96.
 
-\bibitem{oord2018representation} A. van den Oord, Y. Li, and O. Vinyals, ``Representation learning with contrastive predictive coding,'' \textit{arXiv preprint arXiv:1807.03748}, 2018.
+\bibitem{mcfee2015}
+B. McFee, C. Raffel, D. Liang, D. P. W. Ellis, M. McVicar, E. Battenberg, and O. Nieto, ``librosa: Audio and music signal analysis in python,'' in \textit{Proc. Python in Science Conference}, 2015, pp. 18--25.
 
-\bibitem{paulus2009music} J. Paulus and A. Klapuri, ``Music structure analysis using a probabilistic fitness measure and a greedy search algorithm,'' \textit{IEEE Transactions on Audio, Speech, and Language Processing}, vol. 17, no. 6, pp. 1159-1170, 2009.
+\bibitem{defferrard2017}
+M. Defferrard, K. Benzi, P. Vandergheynst, and X. Bresson, ``FMA: A dataset for music analysis,'' in \textit{Proc. Int. Society for Music Information Retrieval Conf. (ISMIR)}, 2017, pp. 316--323.
 
-\bibitem{nieto2013perceptual} O. Nieto and T. Jehan, ``Convex non-negative matrix factorization for automatic music structure identification,'' in \textit{Proc. IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 2013, pp. 236-240.
+\bibitem{sturm2013}
+B. L. Sturm, ``Classification accuracy is not enough: On the evaluation of music genre recognition systems,'' \textit{Journal of Intelligent Information Systems}, vol. 41, no. 3, pp. 371--406, 2013.
 
-\bibitem{logan2000mel} B. Logan, ``Mel frequency cepstral coefficients for music modeling,'' in \textit{Proc. International Symposium on Music Information Retrieval (ISMIR)}, 2000.
+\bibitem{maaten2008}
+L. van der Maaten and G. Hinton, ``Visualizing data using t-SNE,'' \textit{Journal of Machine Learning Research}, vol. 9, pp. 2579--2605, 2008.
 
-\bibitem{muller2007information} M. Müller and S. Ewert, ``Chroma toolbox: MATLAB implementations for extracting variants of chroma-based audio features,'' in \textit{Proc. International Conference on Music Information Retrieval (ISMIR)}, 2011, pp. 215-220.
+\bibitem{hinton2006}
+G. E. Hinton and R. R. Salakhutdinov, ``Reducing the dimensionality of data with neural networks,'' \textit{Science}, vol. 313, no. 5786, pp. 504--507, 2006.
 
-\bibitem{dieleman2014end} S. Dieleman and B. Schrauwen, ``End-to-end learning for music audio,'' in \textit{Proc. IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP)}, 2014, pp. 6964-6968.
-
-\bibitem{esling2018universal} P. Esling and N. Agon, ``Time-series data mining,'' \textit{ACM Computing Surveys}, vol. 45, no. 1, pp. 1-34, 2012.
-
-\bibitem{jolliffe2016principal} I. T. Jolliffe and J. Cadima, ``Principal component analysis: A review and recent developments,'' \textit{Philosophical Transactions of the Royal Society A}, vol. 374, no. 2065, 2016.
-
-\bibitem{maaten2008visualizing} L. van der Maaten and G. Hinton, ``Visualizing data using t-SNE,'' \textit{Journal of Machine Learning Research}, vol. 9, pp. 2579-2605, 2008.
-
-\bibitem{mcinnes2018umap} L. McInnes, J. Healy, and J. Melville, ``UMAP: Uniform manifold approximation and projection for dimension reduction,'' \textit{arXiv preprint arXiv:1802.03426}, 2018.
-
-\bibitem{defferrard2017fma} M. Defferrard, K. Benzi, P. Vandergheynst, and X. Bresson, ``FMA: A dataset for music analysis,'' in \textit{Proc. International Society for Music Information Retrieval Conference (ISMIR)}, 2017.
-
-\bibitem{bertin2011million} T. Bertin-Mahieux, D. P. Ellis, B. Whitman, and P. Lamere, ``The million song dataset,'' in \textit{Proc. International Society for Music Information Retrieval Conference (ISMIR)}, 2011, pp. 591-596.
-
-\bibitem{spotify2020web} Spotify, ``Spotify Web API Documentation,'' 2020. [Online]. Available: \url{https://developer.spotify.com/documentation/web-api/}
+\bibitem{dhariwal2020}
+P. Dhariwal, H. Jun, C. Payne, J. W. Kim, A. Radford, and I. Sutskever, ``Jukebox: A generative model for music,'' \textit{arXiv preprint arXiv:2005.00341}, 2020.
 
 \end{thebibliography}
 

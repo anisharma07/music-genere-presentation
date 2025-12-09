@@ -1,0 +1,62 @@
+Home
+Table of content
+Introduction & Problem Statement
+Methodology
+
+Data-collection -> Raw-audio-> feature-extraction-> Descriptive Analysis -> data-inspection&StandardScalar -> outliers-detection -> 
+standardscalar(here or before) -> pca-reduction -> Kmeans analysis-> kmeansmedoid--> gmm -> spectral -> combined dataset-results-> labels classified ->
+
+
+Explain the datasets used
+
+Features Extracted
+
+
+
+
+
+
+
+
+
+
+================================================================================
+FINAL RESULTS SUMMARY
+================================================================================
+
+FMA SMALL:
+  Total tracks: 7,997
+  Unique genres: 8
+  Genres: ['Electronic', 'Experimental', 'Folk', 'Hip-Hop', 'Instrumental', 'International', 'Pop', 'Rock']
+
+FMA MEDIUM:
+  Total tracks: 16,988
+  Unique genres: 16
+  Genre distribution:
+    Rock                     :  6,099 tracks
+    Electronic               :  5,312 tracks
+    Experimental             :  1,251 tracks
+    Hip-Hop                  :  1,197 tracks
+    Classical                :    619 tracks
+    Folk                     :    518 tracks
+    Old-Time / Historic      :    510 tracks
+    Jazz                     :    384 tracks
+    Instrumental             :    349 tracks
+    Pop                      :    186 tracks
+    Country                  :    178 tracks
+    Soul-RnB                 :    154 tracks
+    Spoken                   :    118 tracks
+    Blues                    :     74 tracks
+    Easy Listening           :     21 tracks
+    International            :     18 tracks
+
+
+
+
+
+
+
+
+
+
+Technology-Stack

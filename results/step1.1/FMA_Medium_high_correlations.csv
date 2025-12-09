@@ -1,0 +1,19 @@
+Feature 1,Feature 2,Correlation
+spec_centroid_mean,spec_rolloff_mean,0.9681742261906586
+spec_centroid_mean,mfcc2_mean,-0.9090110689866511
+spec_rolloff_mean,mfcc2_mean,-0.9020788163971536
+mfcc16_std,mfcc17_std,0.8652511711374296
+mfcc19_std,mfcc20_std,0.864495904952053
+mfcc18_std,mfcc19_std,0.8556731804283281
+mfcc14_std,mfcc15_std,0.8539939882194233
+mfcc17_std,mfcc18_std,0.8523393197543704
+mfcc15_std,mfcc16_std,0.8520935442535068
+mfcc13_std,mfcc14_std,0.8500854245199377
+mfcc12_std,mfcc13_std,0.8416066202976478
+mfcc11_std,mfcc12_std,0.8349851882111492
+mfcc10_std,mfcc11_std,0.8225985884961793
+spec_centroid_mean,zcr_mean,0.8223293546297086
+mfcc8_std,mfcc9_std,0.8169224460342226
+mfcc9_std,mfcc10_std,0.8161728755629438
+mfcc7_std,mfcc8_std,0.8160403748325298
+mfcc6_std,mfcc7_std,0.8039846206795257

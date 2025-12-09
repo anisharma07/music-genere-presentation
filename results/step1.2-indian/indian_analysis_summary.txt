@@ -1,0 +1,84 @@
+================================================================================
+INDIAN MUSIC DATASET - DESCRIPTIVE ANALYSIS SUMMARY
+================================================================================
+
+1. DATASET OVERVIEW
+--------------------------------------------------------------------------------
+Total tracks: 500
+Number of features: 71
+Number of genres: 5
+
+2. GENRE DISTRIBUTION
+--------------------------------------------------------------------------------
+  bollypop            :   100 tracks (20.00%)
+  carnatic            :   100 tracks (20.00%)
+  ghazal              :   100 tracks (20.00%)
+  semiclassical       :   100 tracks (20.00%)
+  sufi                :   100 tracks (20.00%)
+
+3. KEY FEATURE STATISTICS
+--------------------------------------------------------------------------------
+
+duration:
+  Mean: 45.1277
+  Median: 45.0000
+  Std: 2.8259
+  Range: [40.0000, 105.0000]
+
+tempo:
+  Mean: 121.6382
+  Median: 117.4538
+  Std: 28.9072
+  Range: [61.5234, 215.3320]
+
+spec_centroid_mean:
+  Mean: 2059.1919
+  Median: 2019.0902
+  Std: 455.7547
+  Range: [942.4791, 3765.8591]
+
+spec_rolloff_mean:
+  Mean: 4394.5692
+  Median: 4344.8043
+  Std: 1072.6990
+  Range: [1681.3908, 7950.0630]
+
+zcr_mean:
+  Mean: 0.0894
+  Median: 0.0833
+  Std: 0.0295
+  Range: [0.0374, 0.2070]
+
+rms_mean:
+  Mean: 0.1564
+  Median: 0.1534
+  Std: 0.0689
+  Range: [0.0228, 0.3888]
+
+4. CORRELATION INSIGHTS
+--------------------------------------------------------------------------------
+Found 4 feature pairs with |r| > 0.8
+Top 5 correlations:
+  spec_centroid_mean             <-> spec_rolloff_mean             :  0.948
+  spec_centroid_mean             <-> mfcc2_mean                    : -0.912
+  spec_rolloff_mean              <-> mfcc2_mean                    : -0.890
+  rms_mean                       <-> mfcc1_mean                    :  0.837
+
+5. DATA QUALITY CHECK
+--------------------------------------------------------------------------------
+✓ No missing values found
+
+6. GENERATED FILES
+--------------------------------------------------------------------------------
+Output directory: ../results/step1.2-indian/
+Files created:
+  - indian_correlation_heatmap.png
+  - indian_descriptive_stats.csv
+  - indian_feature_by_genre.png
+  - indian_genre_distribution.png
+  - indian_genre_statistics.csv
+  - indian_high_correlations.csv
+
+================================================================================
+END OF SUMMARY REPORT
+================================================================================

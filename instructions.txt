@@ -1,0 +1,81 @@
+Instructions:
+
+Develop a machine learning based project. Each student is required to work on individual problem choosing from the list provided.   All write ups are to be as per IEEE format. 
+
+Evaluation criteria:
+The novelty of the project ideas and applications. Highlight the significance, originality, and rigor of the research 
+The extensiveness of the study and experiments.  Combination of several ML/well-designed
+experiments/thorough analysis of the experimental results/integration of ML with real world application.
+Presentation and question answering in the class.
+Report preparation.
+(I)  Proposal
+
+Include the following information:
+ Cover page:  Roll No. Name, Subject Code, Name of the Subject, Course Component, Project Title, Year, Semester, Department , Institute
+ Project idea. various approaches and the approach chosen by you (approximately two paragraphs)
+Data set (Choose at least four  different datasets  from different sources for the problem).
+Software/Hardware
+Reference papers. Include  at least 5 additional  relevant papers.
+
+
+(II) Data Set Analysis
+
+  Descriptive Statistics Analysis
+Identify at least four different datasets for your problem.  Check the data quality of each dataset.
+
+Check for adequacy of data.
+Check whether the dataset is imbalanced.
+Generate all descriptive statistical analysis (which were discussed in the class)
+Check for outliers in the data (use boxplot) Removing outliers (noisy data).
+Removing null or irrelevant values in the columns. (Change null values to mean value of that column.)
+If there is any missing data, either ignore the tuple or fill it with a mean value of the column.
+Need for data augmentation.
+Document  your results regarding data cleaning.
+Identify the distribution pattern of data.
+Find the sample mean X¯.
+Find the 100p percentile for p = 0.75 and p= 0.25
+Find the median M and the third quartile Q3.
+Draw the box plot and identify the outliers.
+Obtain the trimmed mean X¯ T . Decide on trimming fraction just enough to
+eliminate the outliers and obtain the trimmed median M¯T .
+obtain the trimmed standard deviation ST .
+what can you say about the population from which the data arrived?
+Conduct Correlation of important parameters. 
+
+Document all your findings and recommendations. Include appropriate tables and graphs.
+
+sample for reference
+(https://www.kaggle.com/code/chrischapman12343/gender-inequality-data-cleaning-and-model-training#Data-Visuzalization
+
+https://www.kaggle.com/code/priyanshusethi/gender-discrimination-a-case-study)
+
+https://www.kaggle.com/competitions/recodai-luc-scientific-image-forgery-detection?utm_medium=email&utm_source=gamma&utm_campaign=comp-recodai-2025
+
+(III) Implementation
+
+    Experimental Setups:
+ 
+       Conduct experiments : with different variants  of algorithms with training and testing : (50-50, 60-40, 70-30 and 80-20
+distribution) and other options like randomization etc.  Cross validation
+                    
+ Use at least 6 evaluation metrics for each experiment.  Interpret your results Compare your results
+
+(IV) Final Deliverables:  i)
+PPT presentation;  ii) Report;    iii) source code and dataset
+
+Structure of the Report:
+Abstract (500 words)
+Keywords (5 words)
+Introduction
+Related Work
+Implementation
+Theoretical/Mathematical Analysis
+Results and Discussion
+Conclusion
+References
+Acknowledgement
+Research Data and links thereof
+Code and links thereof
+Brief biodata
+
+# MY TOPIC IS: Unsupervised Music Genre Discovery Using Audio Feature Learning 
