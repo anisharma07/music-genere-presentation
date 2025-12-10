@@ -1,5 +1,0 @@
-Feature 1,Feature 2,Correlation
-spec_centroid_mean,spec_rolloff_mean,0.9479171990924049
-spec_centroid_mean,mfcc2_mean,-0.9118659467166551
-spec_rolloff_mean,mfcc2_mean,-0.8903908099926697
-rms_mean,mfcc1_mean,0.8365633207100405

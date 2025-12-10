@@ -169,3 +169,8 @@ htmlcov/
 raw-data
 
 ./raw-data
+
+/results
+
+./results
+results

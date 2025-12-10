@@ -1,0 +1,32 @@
+Ludwig Music Dataset (Moods and Subgenres)
+Genres, Subgenres and Moods Dataset with .mp3 audio files.
+
+About Dataset
+Ludwig Music Dataset
+Ludwig Music Dataset is a small MIR dataset created from Discogs and AcousticBrainZ
+
+This dataset has been designed for the Ludwig Backend of SpotMyFM.
+
+The .mp3 files have been downloaded from Spotify, and each filename is the associated Spotify Track ID.
+
+Labels.json
+This json files contains all the different metadata of a track, like genres, subgenres and moods.
+
+Subgenres
+This file contains a balanced subset the track ids associated with each subgenre.
+
+Folders
+MP3
+This folder contains a small 30s fragment of each track. The tracks are grouped by genre.
+
+MFCCS
+This folder contains a .npy file with the extracted MFFCs of each song. Each .npy file contains around 10 MFFCs of 3s of duration.
+
+Spectrogram
+This folder contains a .npy with the extracted Mel Frequency Spectrograms of each songs. Each .npy file contains around 10 spectrograms of 3s of duration.
+
+30s duration and generes like:
+genres = [
+    "blues", "classical", "electronic", "funk_soul", "hip_hop",
+    "jazz", "latin", "pop", "reggae", "rock"
+]

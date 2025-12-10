@@ -1,5 +1,0 @@
-Dataset,Original Features,Samples,PCA Components,Variance Retained,Reduction Ratio
-GTZAN,69,999,39,95.05%,43.5%
-FMA Small,70,7997,45,95.07%,35.7%
-FMA Medium,70,16988,45,95.29%,35.7%
-Indian Music,69,500,40,95.30%,42.0%
