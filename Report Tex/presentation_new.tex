@@ -1,0 +1,1233 @@
+\documentclass[aspectratio=169]{beamer}
+\usetheme{Madrid}
+\usecolortheme{default}
+
+% Remove navigation symbols and footer
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{}
+
+% Packages
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+% Custom colors
+\definecolor{darkblue}{RGB}{0,51,102}
+\definecolor{lightblue}{RGB}{102,178,255}
+
+% Graphics path
+\graphicspath{{../results/}{../results/2.3-outlier-detection/}{../results/2.5-correlation-analysis/}{../results/3normalization/}{../results/4pca/}{./results/clustering_images/}}
+
+% Title information
+\title[Music Genre Discovery]{Unsupervised Music Genre Discovery Using Audio Feature Learning}
+\author{Anirudh Sharma \\ Roll No.: 22dcs002}
+\institute[NIT Hamirpur]{
+    Department of Computer Science and Engineering \\
+    National Institute of Technology Hamirpur
+}
+\date{}
+
+\begin{document}
+
+%==============================================================================
+% TITLE SLIDE
+%==============================================================================
+\begin{frame}[plain]
+    \begin{center}
+        \vspace*{0.8cm}
+        {\LARGE \textbf{Unsupervised Music Genre Discovery}}\\[0.2cm]
+        {\Large \textbf{Using Audio Feature Learning}}\\[0.4cm]
+
+        \IfFileExists{../nith_logo.png}{
+            \includegraphics[width=0.17\textwidth]{../nith_logo.png}
+        }{
+            \fbox{\parbox{0.17\textwidth}{\centering NITH\\Logo}}
+        }\\[0.4cm]
+
+        {\small Department of Computer Science and Engineering}\\[0.1cm]
+        {\small \textbf{National Institute of Technology Hamirpur}}\\[0.2cm]
+        {\footnotesize Machine Learning (CS-652)}\\
+        {\footnotesize Semester VII}\\[0.5cm]
+    \end{center}
+    
+    \vfill
+    \begin{minipage}[b]{\textwidth}
+        \tiny
+        \begin{tabular}{@{}p{0.48\textwidth}@{}p{0.04\textwidth}@{}p{0.48\textwidth}@{}}
+            Presented by: Anirudh Sharma (22dcs002) & & \hfill Presented to: Dr. Kamlesh Datta
+        \end{tabular}
+    \end{minipage}
+    \vspace{0.2cm}
+\end{frame}
+
+%==============================================================================
+% TABLE OF CONTENTS
+%==============================================================================
+\begin{frame}{Presentation Outline}
+    \tableofcontents
+\end{frame}
+
+%==============================================================================
+% SECTION 1: INTRODUCTION
+%==============================================================================
+\section{Introduction}
+
+\begin{frame}{Introduction}
+    \frametitle{Introduction}
+    
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \small
+        The exponential growth of digital music platforms has created massive repositories of unlabeled audio data, making manual organization infeasible at scale. This project presents a comprehensive comparative analysis of \textbf{four unsupervised learning algorithms}—K-Means, K-Medoids, Gaussian Mixture Models (GMM), and Spectral Clustering.
+        
+        \vspace{0.3cm}
+        
+        We evaluate these algorithms across datasets ranging from 500 to 25,000 samples, incorporating robust preprocessing (outlier detection, StandardScaler, PCA) and comprehensive evaluation using six performance metrics. High-dimensional clusters are visualized using t-SNE to analyze genre separation and cohesion.
+        
+        \column{0.48\textwidth}
+        \begin{figure}
+            \centering
+            \IfFileExists{../images/spectrogram.png}{
+                \includegraphics[width=\textwidth]{../images/spectrogram.png}
+            }{
+                \fbox{\parbox{0.9\textwidth}{\centering Audio waveform and\\spectrogram representation}}
+            }
+            \caption{Audio waveform and spectrogram representation}
+        \end{figure}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{What are Music Genres?}
+    \begin{columns}
+        \column{0.5\textwidth}
+        \textbf{Definition}
+        \begin{itemize}
+            \item Musical categories based on shared characteristics
+            \item Defined by instrumentation, rhythm, harmony, and cultural context
+            \item Evolve over time and across cultures
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \textbf{GTZAN Genre Labels (Our Baseline)}
+        \begin{itemize}
+            \item We use \textbf{10 genre clusters} from GTZAN:
+            \begin{itemize}
+                \footnotesize
+                \item Blues, Classical, Country
+                \item Disco, Hip-hop, Jazz
+                \item Metal, Pop, Reggae, Rock
+            \end{itemize}
+            \item Rock (subgenre): Hard Rock, Punk Rock, Progressive Rock
+            \item Hip-Hop: Trap, Boom Bap, Lo-Fi
+        \end{itemize}
+        
+        \column{0.5\textwidth}
+        \textbf{Genre Subtypes \& Complexity}
+        \begin{itemize}
+            \item Over 1,000+ documented subgenres
+            \item Hierarchical relationships (parent-child)
+            \item Genre fusion and cross-pollination
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \begin{alertblock}{Key Challenges}
+            \begin{itemize}
+                \item \textbf{Subjectivity}: Genre labels vary across listeners
+                \item \textbf{Overlap}: Songs span multiple genres
+                \item \textbf{Evolution}: Genres constantly change
+                \item \textbf{Ambiguity}: Fuzzy boundaries between styles
+                \item \textbf{Scale}: Millions of unlabeled tracks
+            \end{itemize}
+        \end{alertblock}
+    \end{columns}
+\end{frame}
+
+%==============================================================================
+% SECTION 2: LITERATURE REVIEW
+%==============================================================================
+\section{Literature Review}
+
+\begin{frame}{Recent Advances in Music Genre Analysis}
+    \begin{table}[h]
+        \centering
+        \scriptsize
+        \begin{tabular}{p{2.8cm}p{1.5cm}p{3.5cm}p{2.8cm}}
+            \toprule
+            \textbf{Study} & \textbf{Year} & \textbf{Method} & \textbf{Key Finding} \\
+            \midrule
+            Singh et al. & 2024 & Unsupervised Raga discovery & Novel class identification in Indian music \\
+            Kumar et al. & 2024 & K-Means clustering & Effective for recommendation systems \\
+            Ma et al. & 2023 & Speech SSL for music & Cross-domain transfer learning \\
+            Wang et al. & 2023 & Angular contrastive loss & Improved embedding separation \\
+            Chong et al. & 2023 & Masked spectrogram & Captures temporal dependencies \\
+            Tzanetakis \& Cook & 2002 & GTZAN benchmark & Foundational feature engineering \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+    
+    \vspace{0.3cm}
+    
+    \begin{columns}
+        \column{0.48\textwidth}
+        \textbf{Research Gap}
+        \begin{itemize}
+            \footnotesize
+            \item Limited cross-cultural validation
+            \item Few systematic algorithm comparisons
+            \item Lack of unified evaluation frameworks
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{Our Contribution}
+        \begin{itemize}
+            \footnotesize
+            \item 5 diverse datasets (Western + Indian)
+            \item 4 algorithms with 6 metrics
+            \item Reproducible experimental pipeline
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+%==============================================================================
+% SECTION 3: METHODOLOGY
+%==============================================================================
+\section{Methodology}
+
+\begin{frame}{Methodology}
+    \begin{center}
+        \IfFileExists{../images/flow-diagram.png}{
+            \includegraphics[width=0.9\textwidth]{../images/flow-diagram.png}
+        }{
+            \fbox{\parbox{0.8\textwidth}{\centering Flow Diagram\\Not Found}}
+        }
+    \end{center}
+\end{frame}
+
+%==============================================================================
+% SECTION 4: DATASET SELECTION
+%==============================================================================
+\section{Dataset Selection}
+
+\begin{frame}{Dataset Collection and Analysis}
+    \begin{table}[h]
+        \centering
+        \small
+        \begin{tabular}{lcccc}
+            \toprule
+            \textbf{Dataset} & \textbf{Tracks} & \textbf{Genres} & \textbf{Duration} & \textbf{Balance} \\
+            \midrule
+            Indian Regional & 500 & 5 & 45s & Perfect \\
+            GTZAN & 1,000 & 10 & 30s & Perfect \\
+            FMA Small & 8,000 & 8 & 30s & Balanced \\
+            Ludwig & 11,300 & 10 & 30s & Mixed \\
+            FMA Medium & 17,000 & 16 & 30s & Unbalanced \\
+            \midrule
+            \textbf{Total} & \textbf{37,800} & \textbf{49} & -- & -- \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+    
+    \vspace{0.3cm}
+    
+    \begin{columns}
+        \column{0.48\textwidth}
+        \textbf{Genre Coverage}
+        \begin{itemize}
+            \footnotesize
+            \item \textbf{Western}: blues, classical, country, disco, hip-hop, jazz, metal, pop, reggae, rock
+            \item \textbf{Indian}: Bollypop, Carnatic, Ghazal, Semiclassical, Sufi
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{Dataset Diversity}
+        \begin{itemize}
+            \footnotesize
+            \item Size: 500 to 17,000 tracks
+            \item Cultural: Western + Indian traditions
+            \item Balance: Perfect to unbalanced
+            \item Source: Kaggle, FMA Archive
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+%==============================================================================
+% SECTION 5: FEATURE EXTRACTION
+%==============================================================================
+\section{Feature Extraction}
+
+\begin{frame}{Feature Extraction}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{69 Features Extracted (Librosa 0.11.0)}
+        
+        \vspace{0.2cm}
+        
+        \textbf{1. Spectral Features (4)}
+        \begin{itemize}
+            \footnotesize
+            \item Spectral Centroid (brightness)
+            \item Spectral Rolloff (85\% energy)
+            \item Zero-Crossing Rate (noisiness)
+            \item RMS Energy (amplitude)
+        \end{itemize}
+        
+        \vspace{0.2cm}
+        
+        \textbf{2. MFCCs (40)}
+        \begin{itemize}
+            \footnotesize
+            \item 20 coefficients × (mean + std)
+            \item Timbral characterization
+            \item Human auditory perception model
+        \end{itemize}
+        
+        \vspace{0.2cm}
+        
+        \textbf{3. Chromagrams (24)}
+        \begin{itemize}
+            \footnotesize
+            \item 12 pitch classes × (mean + std)
+            \item Harmonic content (C-B)
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{4. Tempo (1)}
+        \begin{itemize}
+            \footnotesize
+            \item BPM via beat tracking
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \begin{block}{Extraction Settings}
+            \footnotesize
+            \begin{itemize}
+                \item \textbf{Sample Rate}: 22,050 Hz
+                \item \textbf{Window}: 2048 samples (~93ms)
+                \item \textbf{Hop Length}: 512 samples (~23ms)
+                \item \textbf{Processing}: CPU-based
+            \end{itemize}
+        \end{block}
+        
+        \vspace{0.3cm}
+        
+        \begin{alertblock}{Success Rate}
+            \footnotesize
+            \textbf{99.94\%} extraction success\\
+            37,778 / 37,800 tracks processed\\
+            Only 22 files failed (corruption)
+        \end{alertblock}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Feature Extraction Results}
+    \begin{table}[h]
+        \centering
+        \begin{tabular}{lcccc}
+            \toprule
+            \textbf{Dataset} & \textbf{Total} & \textbf{Success} & \textbf{Failed} & \textbf{Rate} \\
+            \midrule
+            Indian Regional & 500 & 500 & 0 & 100.00\% \\
+            GTZAN & 1,000 & 999 & 1 & 99.90\% \\
+            FMA Small & 8,000 & 7,997 & 3 & 99.96\% \\
+            Ludwig & 11,300 & 11,294 & 6 & 99.95\% \\
+            FMA Medium & 17,000 & 16,988 & 12 & 99.93\% \\
+            \midrule
+            \textbf{Combined} & \textbf{37,800} & \textbf{37,778} & \textbf{22} & \textbf{99.94\%} \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+    
+    \vspace{0.3cm}
+    
+    \begin{columns}
+        \column{0.48\textwidth}
+        \textbf{Failure Analysis}
+        \begin{itemize}
+            \footnotesize
+            \item File corruption: 10 files
+            \item Unsupported codec: 7 files
+            \item Incomplete downloads: 5 files
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{Quality Assurance}
+        \begin{itemize}
+            \footnotesize
+            \item Zero NaN values detected
+            \item Zero infinite values
+            \item All 69 features validated
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+%==============================================================================
+% SECTION 6: DESCRIPTIVE ANALYSIS
+%==============================================================================
+\section{Descriptive Analysis}
+
+\begin{frame}{Descriptive Analysis Overview}
+    \begin{columns}
+        \column{0.48\textwidth}
+        \textbf{Purpose}
+        \begin{itemize}
+            \footnotesize
+            \item Understand data quality and characteristics
+            \item Identify patterns and anomalies
+            \item Justify preprocessing decisions
+            \item Guide normalization and dimensionality reduction
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \textbf{Four-Phase Analysis}
+        \begin{enumerate}
+            \footnotesize
+            \item \textbf{Data Integrity}: Validate completeness and cleanliness
+            \item \textbf{Outlier Detection}: Identify extreme values using IQR
+            \item \textbf{Distribution Analysis}: Assess skewness and normality
+            \item \textbf{Correlation Analysis}: Examine feature relationships
+        \end{enumerate}
+        
+        \column{0.48\textwidth}
+        \textbf{Key Questions Addressed}
+        \begin{itemize}
+            \footnotesize
+            \item Are there missing or corrupted values?
+            \item Do outliers represent errors or genuine diversity?
+            \item Are features normally distributed?
+            \item Which features are highly correlated?
+            \item Is dimensionality reduction needed?
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \begin{block}{Outcome}
+            \footnotesize
+            Analysis reveals need for:
+            \begin{itemize}
+                \scriptsize
+                \item StandardScaler normalization (scale differences)
+                \item PCA reduction (correlated features, 69D→42D)
+                \item No transformation (acceptable skewness)
+            \end{itemize}
+        \end{block}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Phase 1: Data Integrity Validation}
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \textbf{Quality Checks Performed}
+        
+        \begin{table}[h]
+            \centering
+            \footnotesize
+            \begin{tabular}{lccc}
+                \toprule
+                \textbf{Check} & \textbf{Count} & \textbf{Action} \\
+                \midrule
+                NaN values & 0 & ✓ None \\
+                Infinite values & 0 & ✓ None \\
+                Silent files & 4 & ✗ Removed \\
+                \midrule
+                \textbf{Valid tracks} & \textbf{37,774} & \textbf{99.99\%} \\
+                \bottomrule
+            \end{tabular}
+        \end{table}
+        
+        \vspace{0.3cm}
+        
+        \textbf{Silent/Corrupt File Detection}
+        \begin{itemize}
+            \footnotesize
+            \item Threshold: spectral features $<$ 0.001
+            \item FMA Small: 1 file removed
+            \item FMA Medium: 2 files removed
+            \item Ludwig: 1 file removed
+        \end{itemize}
+        
+        \column{0.42\textwidth}
+        \begin{block}{Validation Metrics}
+            \footnotesize
+            \begin{itemize}
+                \item \textbf{Original tracks}: 37,778
+                \item \textbf{Removed}: 4 (0.011\%)
+                \item \textbf{Final dataset}: 37,774
+                \item \textbf{Cleanliness}: 99.99\%
+            \end{itemize}
+        \end{block}
+        
+        \vspace{0.3cm}
+        
+        \begin{alertblock}{Key Finding}
+            \footnotesize
+            Exceptional data quality with robust Librosa extraction. Only corruption-related failures, no feature computation errors.
+        \end{alertblock}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Phase 2: Outlier Detection (IQR Method)}
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth]{2.3-outlier-detection/box-gtzan.png}
+            \caption{GTZAN boxplots: tempo, RMS, spectral centroid, ZCR}
+        \end{figure}
+        
+        \column{0.42\textwidth}
+        \begin{table}[h]
+            \centering
+            \scriptsize
+            \begin{tabular}{lcc}
+                \toprule
+                \textbf{Feature} & \textbf{Count} & \textbf{Rate} \\
+                \midrule
+                Tempo & 358 & 0.95\% \\
+                RMS & 326 & 0.86\% \\
+                Centroid & 220 & 0.58\% \\
+                ZCR & 638 & 1.69\% \\
+                \bottomrule
+            \end{tabular}
+        \end{table}
+        
+        \vspace{0.2cm}
+        
+        \textbf{Decision: Retain All}
+        \begin{itemize}
+            \footnotesize
+            \item All rates $<$ 2\% (LOW severity)
+            \item Represent genuine musical diversity
+            \item No evidence of measurement errors
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Outlier Comparison Across Datasets}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.6\textwidth]{2.3-outlier-detection/outlier_comparison.png}
+        \caption{Outlier percentages: ZCR shows highest variability (1.69\%), spectral centroid lowest (0.58\%)}
+    \end{figure}
+\end{frame}
+
+\begin{frame}{Phase 3: Distribution \& Skewness Analysis}
+    \begin{columns}
+        \column{0.48\textwidth}
+        \textbf{Skewness Classification}
+        
+        \begin{table}[h]
+            \centering
+            \footnotesize
+            \begin{tabular}{lcc}
+                \toprule
+                \textbf{Severity} & \textbf{Count} & \textbf{\%} \\
+                \midrule
+                HIGH ($\geq$ 1.0) & 11 & 16.9\% \\
+                MODERATE (0.5-1.0) & 35 & 53.8\% \\
+                LOW (< 0.5) & 19 & 29.2\% \\
+                \midrule
+                \textbf{Total} & \textbf{65} & \textbf{100\%} \\
+                \bottomrule
+            \end{tabular}
+        \end{table}
+        
+        \vspace{0.2cm}
+        
+        \textbf{Key Features (Acceptable)}
+        \begin{itemize}
+            \footnotesize
+            \item Spectral rolloff: -0.043
+            \item Spectral centroid: 0.286
+            \item Tempo: 0.429
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{Decision: No Transformation}
+        \begin{itemize}
+            \footnotesize
+            \item 70.7\% features moderate-high skew
+            \item Core spectral features near-Gaussian
+            \item Preserve interpretability
+            \item Avoid transformation artifacts
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \begin{alertblock}{Rationale}
+            \footnotesize
+            Logarithmic transformation would affect interpretability and introduce artifacts. StandardScaler normalization handles scale differences effectively for clustering.
+        \end{alertblock}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Phase 4: Correlation Analysis}
+    \begin{columns}[T]
+        \column{0.55\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth]{2.5-correlation-analysis/correlation_mfcc_mean_combined.png}
+            \caption{MFCC correlation matrix (37,774 tracks)}
+        \end{figure}
+        
+        \column{0.42\textwidth}
+        \begin{table}[h]
+            \centering
+            \scriptsize
+            \begin{tabular}{lcc}
+                \toprule
+                \textbf{Dataset} & \textbf{Mean r} & \textbf{Pairs$>$0.7} \\
+                \midrule
+                GTZAN & 0.077 & 13 \\
+                FMA Small & 0.247 & 0 \\
+                FMA Medium & 0.246 & 0 \\
+                Indian & 0.155 & 0 \\
+                Ludwig & 0.212 & 0 \\
+                \bottomrule
+            \end{tabular}
+        \end{table}
+        
+        \vspace{0.2cm}
+        
+        \textbf{Key Findings}
+        \begin{itemize}
+            \footnotesize
+            \item Adjacent MFCCs show correlation
+            \item Consistent patterns across datasets
+            \item Validates unified PCA approach
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+%==============================================================================
+% SECTION 7: DATA PREPROCESSING
+%==============================================================================
+\section{Data Preprocessing}
+
+\begin{frame}{Normalization: StandardScaler}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{Z-Score Normalization}
+        
+        \begin{equation*}
+            z = \frac{x - \mu}{\sigma}
+        \end{equation*}
+        
+        \vspace{0.2cm}
+        
+        \textbf{Why Normalize?}
+        \begin{itemize}
+            \footnotesize
+            \item Features on different scales:
+            \begin{itemize}
+                \scriptsize
+                \item Tempo: 0-200 BPM
+                \item Spectral centroid: 0-8000 Hz
+                \item Chroma: 0-1
+            \end{itemize}
+            \item Distance-based algorithms sensitive
+            \item Equal feature contribution
+        \end{itemize}
+        
+        \vspace{0.2cm}
+        
+        \textbf{Verification Results}
+        \begin{itemize}
+            \footnotesize
+            \item All features: μ = 0.0000
+            \item All features: σ = 1.0000
+            \item Zero NaN/Inf post-normalization
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \begin{table}[h]
+            \centering
+            \scriptsize
+            \begin{tabular}{lcc}
+                \toprule
+                \textbf{Dataset} & \textbf{Tracks} & \textbf{Features} \\
+                \midrule
+                GTZAN & 999 & 69 \\
+                FMA Small & 7,996 & 70 \\
+                FMA Medium & 16,986 & 70 \\
+                Ludwig & 11,293 & 69 \\
+                Indian & 500 & 69 \\
+                \midrule
+                \textbf{Total} & \textbf{37,774} & \textbf{69-70} \\
+                \bottomrule
+            \end{tabular}
+        \end{table}
+        
+        \vspace{0.3cm}
+        
+        \begin{block}{Impact}
+            \footnotesize
+            \begin{itemize}
+                \item ✓ Scale-invariant features
+                \item ✓ Improved K-Means convergence
+                \item ✓ Better distance metrics
+                \item ✓ PCA prerequisite satisfied
+            \end{itemize}
+        \end{block}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Normalization Visual Comparison}
+    \begin{figure}
+        \centering
+        \includegraphics[width=0.85\textwidth]{3normalization/gtzan_normalization_comparison.png}
+        \caption{GTZAN: Before (blue) vs After (coral) normalization - shape preserved, scale standardized}
+    \end{figure}
+    
+    
+    \begin{itemize}
+        \footnotesize
+        \item \textbf{Before}: Wide range of scales (0-5000+)
+        \item \textbf{After}: Centered at 0, normalized variance (-3 to +3)
+        \item \textbf{Shape}: Distribution patterns preserved
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{PCA: Dimensionality Reduction}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{Why PCA?}
+        \begin{itemize}
+            \footnotesize
+            \item 69 dimensions = curse of dimensionality
+            \item Correlated features = redundancy
+            \item Computational efficiency
+            \item Preserve 95\% variance
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \begin{table}[h]
+            \centering
+            \scriptsize
+            \begin{tabular}{lcc}
+                \toprule
+                \textbf{Dataset} & \textbf{69→} & \textbf{Reduction} \\
+                \midrule
+                GTZAN & 39 & 43.5\% \\
+                FMA Small & 45 & 35.7\% \\
+                FMA Medium & 45 & 35.7\% \\
+                Ludwig & 42 & 39.1\% \\
+                Indian & 40 & 42.0\% \\
+                \midrule
+                \textbf{Avg} & \textbf{42} & \textbf{39.2\%} \\
+                \bottomrule
+            \end{tabular}
+        \end{table}
+        
+        \column{0.48\textwidth}
+        \textbf{Mathematical Foundation}
+        
+        \begin{equation*}
+            \mathbf{C} = \frac{1}{n-1}\mathbf{X}^T\mathbf{X}
+        \end{equation*}
+        
+        \begin{equation*}
+            \mathbf{X}_{reduced} = \mathbf{X}\mathbf{V}_k
+        \end{equation*}
+        
+        \vspace{0.2cm}
+        
+        \begin{block}{Results}
+            \footnotesize
+            \begin{itemize}
+                \item \textbf{Variance retained}: 95.15\% avg
+                \item \textbf{Speedup}: 2.7× in K-Means
+                \item \textbf{Storage}: 39.2\% reduction
+                \item \textbf{Quality}: No information loss
+            \end{itemize}
+        \end{block}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{PCA Explained Variance}
+    \begin{columns}
+        \column{0.48\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth]{4pca/gtzan_explained_variance.png}
+            \caption{GTZAN: 39 components reach 95.05\%}
+        \end{figure}
+        
+        \column{0.48\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth]{4pca/indian_music_explained_variance.png}
+            \caption{Indian: 40 components reach 95.30\%}
+        \end{figure}
+    \end{columns}
+    
+    \vspace{0.2cm}
+    
+    \begin{itemize}
+        \footnotesize
+        \item \textbf{PC1}: Captures 16-23\% variance (dominant)
+        \item \textbf{Top 10 PCs}: Explain ~60-65\% total variance
+        \item \textbf{Rapid accumulation}: Steep initial slope confirms effectiveness
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{PCA 2D Visualization}
+    \begin{columns}
+        \column{0.48\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth]{4pca/gtzan_pca_2d.png}
+            \caption{GTZAN: Classical/metal separation visible}
+        \end{figure}
+        
+        \column{0.48\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth]{4pca/indian_music_pca_2d.png}
+            \caption{Indian: Regional genre clusters}
+        \end{figure}
+    \end{columns}
+    
+    \vspace{0.2cm}
+    
+    \begin{itemize}
+        \footnotesize
+        \item Partial genre separation in 2D space
+        \item Classical and Metal genres show clear boundaries
+        \item Rock/Blues/Country overlap (similar acoustics)
+    \end{itemize}
+\end{frame}
+
+%==============================================================================
+% SECTION 8: CLUSTERING EXPERIMENTS
+%==============================================================================
+\section{Clustering Experiments}
+
+\begin{frame}{Clustering Algorithms Evaluated}
+    \begin{columns}[T]
+        \column{0.48\textwidth}
+        \textbf{Algorithm Configurations (k=10)}
+        
+        \vspace{0.3cm}
+        
+        \textbf{1. K-Means}
+        \begin{itemize}
+            \footnotesize
+            \item K-Means++ initialization
+            \item 300 max iterations
+            \item 10 random restarts
+        \end{itemize}
+        
+        \vspace{0.2cm}
+        
+        \textbf{2. Agglomerative}
+        \begin{itemize}
+            \footnotesize
+            \item Ward linkage
+            \item Euclidean distance
+            \item Bottom-up hierarchy
+        \end{itemize}
+        
+        \vspace{0.2cm}
+        
+        \textbf{3. GMM}
+        \begin{itemize}
+            \footnotesize
+            \item Full covariance matrices
+            \item EM algorithm (100 iter)
+            \item Soft assignments
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{4. Spectral Clustering}
+        \begin{itemize}
+            \footnotesize
+            \item 15-neighbor affinity
+            \item RBF kernel
+            \item ARPACK eigensolver
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \begin{block}{Evaluation Metrics}
+            \footnotesize
+            \textbf{Internal (no labels):}
+            \begin{itemize}
+                \scriptsize
+                \item Silhouette Score
+                \item Davies-Bouldin Index
+                \item Calinski-Harabasz Score
+            \end{itemize}
+            
+            \textbf{External (with labels):}
+            \begin{itemize}
+                \scriptsize
+                \item Adjusted Rand Index (ARI)
+                \item Normalized Mutual Info (NMI)
+                \item Purity
+            \end{itemize}
+        \end{block}
+    \end{columns}
+\end{frame}
+
+%==============================================================================
+% SECTION 9: RESULTS
+%==============================================================================
+\section{Results}
+
+\begin{frame}{Cross-Dataset Performance Summary}
+    \begin{table}[h]
+        \centering
+        \small
+        \begin{tabular}{lccccl}
+            \toprule
+            \textbf{Dataset} & \textbf{Tracks} & \textbf{Sil.} & \textbf{ARI} & \textbf{Purity} & \textbf{Best} \\
+            \midrule
+            GTZAN & 999 & 0.088 & 0.225 & 42.9\% & Spectral \\
+            FMA Small & 7,996 & 0.046 & 0.107 & 36.8\% & GMM \\
+            FMA Medium & 16,986 & 0.070 & 0.219 & 55.2\% & Spectral \\
+            Ludwig & 11,293 & 0.078 & 0.132 & 42.7\% & K-Means \\
+            Indian & 500 & 0.142 & 0.196 & 53.0\% & Agglom. \\
+            \midrule
+            \textbf{Average} & -- & \textbf{0.085} & \textbf{0.176} & \textbf{45.9\%} & -- \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+    
+    \vspace{0.3cm}
+    
+    \begin{columns}
+        \column{0.48\textwidth}
+        \textbf{Key Findings}
+        \begin{itemize}
+            \footnotesize
+            \item \textbf{45.9\% avg purity}: Nearly half of tracks correctly grouped
+            \item \textbf{No dominant algorithm}: Dataset characteristics matter
+            \item \textbf{Size effect}: Larger datasets show higher purity
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{Algorithm Insights}
+        \begin{itemize}
+            \footnotesize
+            \item \textbf{Spectral}: Best for Western collections
+            \item \textbf{Agglomerative}: Excels on Indian music
+            \item \textbf{K-Means}: Optimal for streaming data
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{GTZAN Clustering Results}
+    \begin{columns}
+        \column{0.48\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth]{./results/clustering_images/gtzan_k10.png}
+            \caption{GTZAN spectral clustering (k=10)}
+        \end{figure}
+        
+        \column{0.48\textwidth}
+        \begin{table}[h]
+            \centering
+            \scriptsize
+            \begin{tabular}{lcc}
+                \toprule
+                \textbf{Algorithm} & \textbf{ARI} & \textbf{Purity} \\
+                \midrule
+                Spectral & \textbf{0.225} & \textbf{42.9\%} \\
+                K-Means & 0.197 & 40.4\% \\
+                GMM & 0.190 & 41.1\% \\
+                Agglom. & 0.187 & 39.3\% \\
+                \bottomrule
+            \end{tabular}
+        \end{table}
+        
+        \vspace{0.2cm}
+        
+        \textbf{Observations}
+        \begin{itemize}
+            \footnotesize
+            \item Spectral clustering best overall
+            \item Classical/Metal well-separated
+            \item Blues/Rock/Country overlap
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{FMA Medium Clustering Results}
+    \begin{columns}
+        \column{0.48\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth]{./results/clustering_images/fma_medium_k10.png}
+            \caption{FMA Medium spectral clustering}
+        \end{figure}
+        
+        \column{0.48\textwidth}
+        \begin{table}[h]
+            \centering
+            \scriptsize
+            \begin{tabular}{lcc}
+                \toprule
+                \textbf{Algorithm} & \textbf{ARI} & \textbf{Purity} \\
+                \midrule
+                Spectral & \textbf{0.219} & \textbf{55.2\%} \\
+                K-Means & 0.161 & 53.5\% \\
+                GMM & 0.136 & 54.8\% \\
+                Agglom. & 0.156 & 52.4\% \\
+                \bottomrule
+            \end{tabular}
+        \end{table}
+        
+        \vspace{0.2cm}
+        
+        \textbf{Highlights}
+        \begin{itemize}
+            \footnotesize
+            \item \textbf{Highest purity}: 55.2\%
+            \item Largest dataset (16,986 tracks)
+            \item Rich genre representations
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Indian Music Clustering Results}
+    \begin{columns}
+        \column{0.48\textwidth}
+        \begin{figure}
+            \centering
+            \includegraphics[width=\textwidth]{./results/clustering_images/indian_k10.png}
+            \caption{Indian music agglomerative clustering}
+        \end{figure}
+        
+        \column{0.48\textwidth}
+        \begin{table}[h]
+            \centering
+            \scriptsize
+            \begin{tabular}{lcc}
+                \toprule
+                \textbf{Algorithm} & \textbf{ARI} & \textbf{Purity} \\
+                \midrule
+                Agglom. & \textbf{0.196} & \textbf{53.0\%} \\
+                GMM & 0.114 & 46.6\% \\
+                K-Means & 0.101 & 47.0\% \\
+                Spectral & 0.110 & 48.8\% \\
+                \bottomrule
+            \end{tabular}
+        \end{table}
+        
+        \vspace{0.2cm}
+        
+        \textbf{Key Insight}
+        \begin{itemize}
+            \footnotesize
+            \item Hierarchical method wins
+            \item Cultural distinctiveness
+            \item Cross-cultural validation success
+        \end{itemize}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Cluster-to-Genre Mapping (k=10)}
+    \begin{table}[h]
+        \centering
+        \scriptsize
+        \begin{tabular}{clp{5cm}}
+            \toprule
+            \textbf{Cluster} & \textbf{Genre} & \textbf{Acoustic Characteristics} \\
+            \midrule
+            0 & Blues & Slow tempo, guitar-dominant, minor keys \\
+            1 & Classical & High spectral complexity, low percussiveness \\
+            2 & Country & Acoustic instruments, moderate tempo \\
+            3 & Disco/Dance & High tempo, strong beat, repetitive \\
+            4 & Hip-Hop & Strong bass, rhythmic vocals, 808 drums \\
+            5 & Jazz & Complex harmonics, improvisation patterns \\
+            6 & Metal & High energy, distorted guitars, fast tempo \\
+            7 & Pop & Balanced spectrum, verse-chorus structure \\
+            8 & Reggae & Off-beat rhythm, bass-heavy, laid-back \\
+            9 & Rock & Guitar-driven, moderate-high energy \\
+            \bottomrule
+        \end{tabular}
+    \end{table}
+    
+    \vspace{0.2cm}
+    
+    \begin{itemize}
+        \footnotesize
+        \item Mapping via \textbf{majority voting} on cluster composition
+        \item Achieves \textbf{45.9\% average purity} across all datasets
+        \item Demonstrates meaningful unsupervised genre recovery
+    \end{itemize}
+\end{frame}
+
+%==============================================================================
+% CONCLUSION
+%==============================================================================
+\section{Conclusion}
+
+\begin{frame}{Key Contributions \& Findings}
+    \begin{columns}
+        \column{0.48\textwidth}
+        \textbf{Technical Achievements}
+        \begin{itemize}
+            \footnotesize
+            \item \textbf{99.94\%} feature extraction success
+            \item \textbf{99.99\%} data cleanliness
+            \item \textbf{39.2\%} dimensionality reduction
+            \item \textbf{95.15\%} variance retained
+            \item \textbf{45.9\%} average purity
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \textbf{Research Contributions}
+        \begin{itemize}
+            \footnotesize
+            \item First cross-cultural study (Western + Indian)
+            \item Unified k=10 cluster-genre mapping
+            \item Comprehensive 4-algorithm comparison
+            \item Reproducible experimental framework
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{Key Insights}
+        \begin{itemize}
+            \footnotesize
+            \item No single algorithm dominates
+            \item Dataset characteristics determine optimal choice
+            \item Spectral: Large Western datasets
+            \item Agglomerative: Cultural distinctiveness
+            \item Meaningful genre recovery without labels
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \begin{block}{Impact}
+            \footnotesize
+            \begin{itemize}
+                \item Streaming platform organization
+                \item Recommendation systems
+                \item Cultural music preservation
+                \item Automated playlist generation
+            \end{itemize}
+        \end{block}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Future Research Directions}
+    \begin{columns}
+        \column{0.48\textwidth}
+        \textbf{Technical Extensions}
+        \begin{itemize}
+            \footnotesize
+            \item Deep learning embeddings (contrastive learning)
+            \item Temporal modeling (RNNs, Transformers)
+            \item Semi-supervised refinement
+            \item Ensemble clustering methods
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \textbf{Dataset Expansion}
+        \begin{itemize}
+            \footnotesize
+            \item Middle Eastern music
+            \item African traditional genres
+            \item Latin American styles
+            \item Cross-dataset transfer learning
+        \end{itemize}
+        
+        \column{0.48\textwidth}
+        \textbf{Application Development}
+        \begin{itemize}
+            \footnotesize
+            \item Real-time classification system
+            \item Multi-label genre assignment
+            \item Web-based interactive explorer
+            \item Streaming platform integration
+        \end{itemize}
+        
+        \vspace{0.3cm}
+        
+        \begin{alertblock}{Research Gaps}
+            \footnotesize
+            \begin{itemize}
+                \item Temporal dynamics preservation
+                \item Long-term musical structure
+                \item Feature bias toward Western music
+                \item Subjective genre boundaries
+            \end{itemize}
+        \end{alertblock}
+    \end{columns}
+\end{frame}
+
+%==============================================================================
+% REFERENCES
+%==============================================================================
+\section{References}
+
+\begin{frame}{Key References}
+    \scriptsize
+    \begin{thebibliography}{99}
+        
+        \bibitem{singh2024}
+        S. Singh et al., ``Identification and clustering of unseen ragas in Indian art music,'' \textit{arXiv:2411.18611}, 2024.
+        
+        \bibitem{kumar2024}
+        R. Kumar et al., ``Enhanced music recommendation systems: K-means clustering approaches,'' \textit{Int. J. Mathematical Engineering}, 2024.
+        
+        \bibitem{ma2023}
+        Y. Ma et al., ``On the effectiveness of speech self-supervised learning for music,'' \textit{ISMIR}, 2023.
+        
+        \bibitem{wang2023}
+        S. Wang et al., ``Self-supervised learning using angular contrastive loss,'' \textit{ICASSP}, 2023.
+        
+        \bibitem{tzanetakis2002}
+        G. Tzanetakis and P. Cook, ``Musical genre classification of audio signals,'' \textit{IEEE Trans. Speech Audio Process.}, 2002.
+        
+        \bibitem{defferrard2017}
+        M. Defferrard et al., ``FMA: A dataset for music analysis,'' \textit{ISMIR}, 2017.
+        
+        \bibitem{mcfee2015}
+        B. McFee et al., ``librosa: Audio and music signal analysis in python,'' \textit{SciPy}, 2015.
+        
+    \end{thebibliography}
+\end{frame}
+
+%==============================================================================
+% THANK YOU SLIDE
+%==============================================================================
+\begin{frame}
+    \begin{center}
+        {\Huge \textbf{Thank You!}}
+        
+        \vspace{1cm}
+        
+        {\Large Questions?}
+        
+        \vspace{1cm}
+        
+        {\normalsize
+        Anirudh Sharma \\
+        22dcs002@nith.ac.in
+        
+        \vspace{0.5cm}
+        
+        Machine Learning Assignment (CS-652) \\
+        Semester-7 (2025)}
+        
+        \vspace{1cm}
+        
+        {\small
+        \textbf{GitHub:} \url{https://github.com/anisharma07/music-genere-presentation}}
+    \end{center}
+\end{frame}
+
+\end{document}
